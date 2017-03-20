@@ -1,0 +1,4 @@
+moduleName = rs.bookstore.book.service.BookService-module
+moduleVersion = 1.0
+extensionClasses = rs.bookstore.book.service.groovy.BookService_GroovyExtension
+staticExtensionClasses = 

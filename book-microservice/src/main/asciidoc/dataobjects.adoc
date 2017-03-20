@@ -1,0 +1,33 @@
+= Cheatsheets
+
+[[Author]]
+== Author
+
+++++
+++++
+'''
+
+[cols=">25%,^25%,50%"]
+[frame="topbot"]
+|===
+^|Name | Type ^| Description
+|[[books]]`books`|`Array of link:dataobjects.html#Book[Book]`|-
+|[[name]]`name`|`String`|-
+|===
+
+[[Book]]
+== Book
+
+++++
+++++
+'''
+
+[cols=">25%,^25%,50%"]
+[frame="topbot"]
+|===
+^|Name | Type ^| Description
+|[[authors]]`authors`|`Array of link:dataobjects.html#Author[Author]`|-
+|[[bookId]]`bookId`|`Number (long)`|-
+|[[title]]`title`|`String`|-
+|===
+
