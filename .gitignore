@@ -1,0 +1,7 @@
+/lib/target/
+/book-microservice/target/
+/shipping-microservice/target/
+/api-gateway/target/
+/order-microservice/target/
+/inventory-microservice/target/
+/customer-microservice/target/
