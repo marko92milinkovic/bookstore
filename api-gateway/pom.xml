@@ -9,6 +9,10 @@
     <artifactId>api-gateway</artifactId>
     <packaging>jar</packaging>
     
+    <properties>
+        <main.verticle>rs.bookstore.apigateway.HttpServerVerticle</main.verticle>
+    </properties>
+    
     <dependencies>
         <dependency>
             <groupId>rs.bookstore</groupId>
@@ -20,5 +24,20 @@
             <groupId>io.vertx</groupId>
             <artifactId>vertx-sockjs-service-proxy</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-auth-mongo</artifactId>
+        </dependency>
     </dependencies>
+    
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-shade-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 </project>
