@@ -19,6 +19,11 @@
             <artifactId>lib</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>rs.bookstore</groupId>
+            <artifactId>customer-microservice</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         
         <dependency>
             <groupId>io.vertx</groupId>
