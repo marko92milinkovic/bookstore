@@ -8,6 +8,9 @@ package rs.bookstore.apigateway;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.HttpClientRequest;
+import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.mongo.HashSaltStyle;
 import io.vertx.ext.auth.mongo.MongoAuth;
@@ -22,7 +25,10 @@ import io.vertx.ext.web.handler.SessionHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.handler.UserSessionHandler;
 import io.vertx.ext.web.sstore.LocalSessionStore;
+import io.vertx.servicediscovery.Record;
 import io.vertx.servicediscovery.types.EventBusService;
+import io.vertx.servicediscovery.types.HttpEndpoint;
+import java.util.List;
 import rs.bookstore.customer.service.Customer;
 import rs.bookstore.customer.service.CustomerService;
 import rs.bookstore.lib.MicroServiceVerticle;
@@ -66,6 +72,12 @@ public class HttpServerVerticle extends MicroServiceVerticle {
 
         // Any requests to URI starting '/private/' require login
         router.route("/private/*").handler(RedirectAuthHandler.create(authProvider, "/loginpage.html"));
+        // Any requests to URI starting '/api/' require login
+        //---------------------------OTKOMENTARISATI---------------
+//        router.route("/api/*").handler(RedirectAuthHandler.create(authProvider, "/loginpage.html"));
+
+        // book api dispatcher
+        router.route("/api/bookservice/*").handler(this::dispatchBookRequests);
 
         // Serve the static private pages from directory 'private'
         router.route("/private/*").handler(StaticHandler.create().setCachingEnabled(false).setWebRoot("private"));
@@ -90,6 +102,68 @@ public class HttpServerVerticle extends MicroServiceVerticle {
             } else {
                 startFuture.fail(ar.cause());
             }
+        });
+    }
+
+    private Future<List<Record>> getHttpMicroservices() {
+        Future<List<Record>> recordsFuture = Future.future();
+        discovery.getRecords(record -> record.getType().equals(HttpEndpoint.TYPE),
+                recordsFuture);
+        return recordsFuture;
+    }
+
+    private void dispatchBookRequests(RoutingContext rc) {
+
+        circuitBreaker.execute(cbFuture -> {
+            discovery.getRecord(record
+                    -> record.getType().equals(HttpEndpoint.TYPE)
+                    && record.getName().equals("book.microservice"), ar -> {
+
+                if (ar.succeeded() && ar.result() != null) {
+
+                    Record bookMicroserviceRecord = ar.result();
+                    HttpClient httpClient
+                            = discovery.getReference(bookMicroserviceRecord).get();
+
+                    String path = rc.request().uri();
+
+                    String apiPAth = (path.split("/api/bookservice"))[1];
+
+                    HttpClientRequest get = httpClient.request(rc.request().method(), apiPAth, booksResponse -> {
+                        booksResponse.bodyHandler(body -> {
+                            if (booksResponse.statusCode() >= 500) {
+                            } else {
+                                HttpServerResponse toRsp = rc.response()
+                                        .setStatusCode(booksResponse.statusCode());
+                                booksResponse.headers().forEach(header -> {
+                                    toRsp.putHeader(header.getKey(), header.getValue());
+                                });
+                                toRsp.end(body);
+                                cbFuture.complete();
+                            }
+                        });
+                    });
+                    System.out.println("Call book-microservice on url: " + get.uri());
+                    get.end();
+                } else {
+                    rc.response().end("Http microservices not found");
+                    cbFuture.complete();
+                    if (ar.cause() != null) {
+                        ar.cause().printStackTrace();
+                    }
+                }
+            }
+            );
+        }).setHandler(ar -> {
+            if (ar.failed()) {
+                ar.cause().printStackTrace();
+                rc.response()
+                        .setStatusCode(502)
+                        .putHeader("content-type", "application/json")
+                        .end(new JsonObject().put("error", "bad_gateway")
+                                //.put("message", ex.getMessage())
+                                .encodePrettily());
+            } 
         });
     }
 
