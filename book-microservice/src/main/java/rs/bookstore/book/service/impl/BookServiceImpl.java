@@ -6,16 +6,13 @@
 package rs.bookstore.book.service.impl;
 
 import io.vertx.core.AsyncResult;
-import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.mongo.MongoClient;
 import java.util.List;
-import java.util.stream.Collectors;
 import rs.bookstore.book.dao.BookDAO;
-import rs.bookstore.book.dao.BookDAOMongoImpl;
+import rs.bookstore.book.dao.impl.BookDAOMongoImpl;
 import rs.bookstore.book.domain.Book;
 import rs.bookstore.book.service.BookService;
 
@@ -37,7 +34,8 @@ public class BookServiceImpl implements BookService {
 
     @Override
     public BookService getBook(long bookID, Handler<AsyncResult<Book>> resultHandler) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        bookDAO.retrieveOne(bookID).setHandler(resultHandler);
+        return this;
     }
 
     @Override

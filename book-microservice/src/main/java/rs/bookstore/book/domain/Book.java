@@ -19,13 +19,13 @@ public class Book {
 
     private long bookId;
     private String title;
+    private int year;
     private List<Author> authors;
 
     public Book() {
     }
 
     public Book(JsonObject json) {
-        System.out.println("\nConverting book\n");
         BookConverter.fromJson(json, this);
     }
 
@@ -33,6 +33,12 @@ public class Book {
         JsonObject json = new JsonObject();
         BookConverter.toJson(this, json);
         return json;
+    }
+
+    //fix this
+    public static Book mapId(JsonObject json) {
+        JsonObject mapper = json.copy().put("bookId", json.getLong("_id"));
+        return new Book(mapper);
     }
 
     public long getBookId() {
@@ -50,7 +56,7 @@ public class Book {
     public void setTitle(String title) {
         this.title = title;
     }
-
+    
     @JsonManagedReference
     public List<Author> getAuthors() {
         return authors;
@@ -59,6 +65,14 @@ public class Book {
     @JsonManagedReference
     public void setAuthors(List<Author> authors) {
         this.authors = authors;
+    }
+
+    public int getYear() {
+        return year;
+    }
+
+    public void setYear(int year) {
+        this.year = year;
     }
 
 }

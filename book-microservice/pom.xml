@@ -9,7 +9,7 @@
     <artifactId>book-microservice</artifactId>
     <packaging>jar</packaging>
     <properties>
-        <main.verticle>rs.bookstore.book.api.BookAPIVerticle</main.verticle>
+        <main.verticle>rs.bookstore.book.api.BookRestAPIVerticle</main.verticle>
     </properties>
     <dependencies>
         <dependency>

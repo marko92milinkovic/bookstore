@@ -22,7 +22,7 @@ import rs.bookstore.lib.MicroServiceVerticle;
  *
  * @author marko
  */
-public class BookAPIVerticle extends MicroServiceVerticle {
+public class BookRestAPIVerticle extends MicroServiceVerticle {
 
     private BookService bookService;
 
@@ -48,7 +48,7 @@ public class BookAPIVerticle extends MicroServiceVerticle {
 
         createHttpServer(router, host, port)
                 .compose(server -> {
-                    publishHttpEndpoint(host, host, port, future);
+                    publishHttpEndpoint("book.microservice", host, port, future);
                 }, future)
                 .setHandler(startFuture.completer());
 
