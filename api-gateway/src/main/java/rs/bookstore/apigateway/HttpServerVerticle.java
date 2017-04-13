@@ -12,6 +12,7 @@ import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.auth.User;
 import io.vertx.ext.auth.mongo.HashSaltStyle;
 import io.vertx.ext.auth.mongo.MongoAuth;
 import io.vertx.ext.mongo.MongoClient;
@@ -24,11 +25,16 @@ import io.vertx.ext.web.handler.RedirectAuthHandler;
 import io.vertx.ext.web.handler.SessionHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.handler.UserSessionHandler;
+import io.vertx.ext.web.handler.sockjs.BridgeOptions;
+import io.vertx.ext.web.handler.sockjs.PermittedOptions;
+import io.vertx.ext.web.handler.sockjs.SockJSHandler;
 import io.vertx.ext.web.sstore.LocalSessionStore;
 import io.vertx.servicediscovery.Record;
 import io.vertx.servicediscovery.types.EventBusService;
 import io.vertx.servicediscovery.types.HttpEndpoint;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.OptionalDouble;
 import rs.bookstore.customer.service.Customer;
 import rs.bookstore.customer.service.CustomerService;
 import rs.bookstore.lib.MicroServiceVerticle;
@@ -40,6 +46,8 @@ import rs.bookstore.lib.MicroServiceVerticle;
 public class HttpServerVerticle extends MicroServiceVerticle {
 
     MongoAuth authProvider;
+    //temporary storage
+    List<JsonObject> reviews = new ArrayList<>();
 
     @Override
     public void start(Future<Void> startFuture) throws Exception {
@@ -78,6 +86,10 @@ public class HttpServerVerticle extends MicroServiceVerticle {
 
         // book api dispatcher
         router.route("/api/bookservice/*").handler(this::dispatchBookRequests);
+
+        // reviews
+        router.route("/api/reviews/*").handler(this::dispatchReviewRequest);
+        router.route("/eventbus/reviews/*").handler(eventbusReviewsHandler());
 
         // Serve the static private pages from directory 'private'
         router.route("/private/*").handler(StaticHandler.create().setCachingEnabled(false).setWebRoot("private"));
@@ -163,7 +175,7 @@ public class HttpServerVerticle extends MicroServiceVerticle {
                         .end(new JsonObject().put("error", "bad_gateway")
                                 //.put("message", ex.getMessage())
                                 .encodePrettily());
-            } 
+            }
         });
     }
 
@@ -183,8 +195,8 @@ public class HttpServerVerticle extends MicroServiceVerticle {
                     .putHeader("content-type", "application/json")
                     .end(new Customer(
                             new JsonObject()
-                            .put("username", "testUsername")
-                            .put("id", "testId")).toJson().encodePrettily());
+                                    .put("username", "testUsername")
+                                    .put("id", "testId")).toJson().encodePrettily());
         } else {
             Future<CustomerService> futureCustomerService = Future.future();
             EventBusService.getServiceProxyWithJsonFilter(
@@ -200,6 +212,37 @@ public class HttpServerVerticle extends MicroServiceVerticle {
                     .setHandler(resultHandlerNonEmpty(rc));
         }
 
+    }
+
+    private void dispatchReviewRequest(RoutingContext rc) {
+        User user = rc.user();
+
+//        if(user==null) {
+//            rc.response().setStatusCode(401).end("not logged in");
+//            return;
+//        }
+        int creatorId = user.principal().getInteger("_id");
+        String comment = rc.request().getParam("comment");
+        int rate = Integer.parseInt(rc.request().getParam("rate"));
+        int bookId = Integer.parseInt(rc.request().getParam("bookId"));
+
+
+        //send comment to review-service
+        JsonObject review = new JsonObject()
+                .put("comment", comment)
+                .put("rate", rate)
+                .put("bookId", bookId)
+                .put("creatorId", creatorId);
+        reviews.add(review);
+                
+        OptionalDouble avgRateOptional = reviews.stream().mapToInt(r -> r.getInteger("rate")).average();
+        double avgRate = rate;
+        if (avgRateOptional.isPresent()) {
+            avgRate = avgRateOptional.getAsDouble();
+        }
+        
+        rc.vertx().eventBus().publish("book.reviews." + bookId, new JsonObject().put("review", review).put("avgRate", avgRate));
+        rc.response().end("ok :) ");
     }
 
     //TO DO: refactor
@@ -219,5 +262,12 @@ public class HttpServerVerticle extends MicroServiceVerticle {
                 ar.cause().printStackTrace();
             }
         };
+    }
+
+    private SockJSHandler eventbusReviewsHandler() {
+        BridgeOptions bridgeOptions = new BridgeOptions()
+                .addOutboundPermitted(new PermittedOptions().setAddressRegex("book\\.reviews\\.[0-9]+"));
+
+        return SockJSHandler.create(vertx).bridge(bridgeOptions);
     }
 }

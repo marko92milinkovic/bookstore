@@ -13,6 +13,7 @@
         <module>shipping-microservice</module>
         <module>customer-microservice</module>
         <module>inventory-microservice</module>
+        <module>reviews-service</module>
     </modules>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -60,6 +61,12 @@
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-hazelcast</artifactId>
+        </dependency>
+        
+        <!--reactive-->
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-rx-java</artifactId>
         </dependency>
 
         <!-- Microservice toolbox -->
