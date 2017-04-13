@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html ng-app="app">
+    <head>
+        <title>TODO supply a title</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="js/node_modules/angular/angular.js" type="text/javascript"></script>
+        <script src="js/app.js" type="text/javascript"></script>
+        <script src="https://cdn.jsdelivr.net/sockjs/1/sockjs.min.js"></script>
+        <script src="js/node_modules/vertx3-eventbus-client/vertx-eventbus.js"></script>
+
+    </head>
+    <body>
+        <div id="book_div" ng-controller="BookController as bookCtrl">
+            <h1>Book {{ bookCtrl.book.title}}</h1>
+            <div>year {{bookCtrl.book.year}}</div><br/>
+            Average rate <div id="avgRate"></div>
+        </div>
+
+        <div id="reviews">
+
+        </div>
+
+
+
+        <script>
+            var eventBus = new EventBus('http://localhost:8500/eventbus/reviews/');
+            eventBus.onopen = function () {
+                eventBus.registerHandler('book.reviews.1', function (error, message) {
+                    console.log("ajde bre vise " + message.body.review.toString());
+                    document.getElementById("avgRate").innerHTML = message.body.avgRate;
+
+                    var comment = message.body.review.comment;
+                    var author = message.body.review.creatorId;
+
+
+
+                    var newDiv = document.createElement('div');
+                    document.getElementById('reviews').appendChild(newDiv);
+                    var commentSpan = document.createElement('span');
+                    commentSpan.innerHTML = "Comment" + comment+"<br/>";
+                    var authorSpan = document.createElement('span');
+                    authorSpan.innerHTML = "Author" + author+"<br/>";
+                    newDiv.appendChild(commentSpan);
+                    newDiv.appendChild(authorSpan)
+                    newDiv.className = 'block';
+
+                });
+            };
+        </script>
+    </body>
+</html>
