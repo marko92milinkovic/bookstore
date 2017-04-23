@@ -1,0 +1,21 @@
+<div id="templatemo_content_right">
+    <div ng-repeat="book in books">
+        <div class="templatemo_product_box">
+            <h1>{{book.title}}  <span>(by Best Author)</span></h1>
+            <img src="images/book_id_{{book.bookId}}.jpg" alt="image" />
+            <div class="product_info">
+                <p>{{book.shortDescription}}</p>
+                <h3>${{book.price}}</h3>
+                <div class="buy_now_button"><a href="/#!/book-to-cart/{{book.bookId}}">Buy Now</a></div>
+                <div class="detail_button"><a href="/#!/books/{{book.bookId}}">Detail</a></div>
+            </div>
+            <div class="cleaner">&nbsp;</div>
+        </div>
+
+        <div class="cleaner_with_width" ng-show="{{books.indexOf(book) % 2 === 0}}">&nbsp;</div>
+        <div class="cleaner_with_height" ng-show="{{books.indexOf(book) % 2 === 1}}">&nbsp;</div>
+    </div>
+    <a href="subpage.html"><img src="images/templatemo_ads.jpg" alt="ads" /></a>
+    <a href="/">TRY ME</a>
+    <a href="/#!/p/private/">TRY ME PRIVATE</a>
+</div>  end of content right 

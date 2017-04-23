@@ -6,49 +6,38 @@
 package rs.bookstore.reviews;
 
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonObject;
 import java.util.List;
-import java.util.Optional;
-import rs.bookstore.lib.repository.RxRepository;
-import rx.Observable;
-import rx.Single;
+import rs.bookstore.reviews.repository.ReviewRxRepository;
+import rs.bookstore.reviews.repository.impl.ReviewRxRepositoryImpl;
 
+public class ReviewServiceImpl implements ReviewService {
 
-public class ReviewServiceImpl implements ReviewService, RxRepository<Review, Long> {
+    ReviewRxRepository repository;
+
+    public ReviewServiceImpl(Vertx vertx, JsonObject config) {
+        repository = new ReviewRxRepositoryImpl(vertx, config);
+    }
 
     @Override
     public void addReview(Review review, Handler<AsyncResult<Void>> resultHandler) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        Future<Void> resultFuture = Future.future();
+        repository.addOne(review).subscribe(resultFuture::complete, resultFuture::fail);
+        resultFuture.setHandler(resultHandler);
+    }
+
+    @Override
+    public void getReviewsByBookId(Long bookId, Handler<AsyncResult<List<Review>>> resultHandler) {
+        Future<List<Review>> resultFuture = Future.future();
+        repository.retrieveByBookId(bookId).toList().subscribe(resultFuture::complete, resultFuture::fail);
+        resultFuture.setHandler(resultHandler);
     }
 
     @Override
     public void getAllReviews(Handler<AsyncResult<List<Review>>> resultHandler) {
-        Observable<Review> reviews = retrieveAll();
-    }
-
-    @Override
-    public Single<Optional<Review>> retrieveOne(Long id) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
-
-    @Override
-    public Single<Review> updateOne(Long id, Review entity) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    @Override
-    public Single<Void> addOne(Review entity) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    @Override
-    public Observable<Review> retrieveAll() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    @Override
-    public Single<Review> deleteOne(Long id) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-    
 }

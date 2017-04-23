@@ -14,7 +14,7 @@ import java.util.List;
  *
  * @author marko
  */
-public interface Repository<T> {
+public interface Repository<T, ID> {
 
     Future<Void> add(T entity);
 
@@ -22,7 +22,7 @@ public interface Repository<T> {
 
     Future<T> delete(T entity);
 
-    Future<T> retrieveOne(Object id);
+    Future<T> retrieveOne(ID id);
 
     Future<List<T>> retrieveAll();
 

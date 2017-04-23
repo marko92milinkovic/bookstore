@@ -5,9 +5,7 @@
  */
 package rs.bookstore.book.dao.impl;
 
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.mongo.MongoClient;
@@ -49,7 +47,7 @@ public class BookDAOMongoImpl extends BookDAO {
     }
 
     @Override
-    public Future<Book> retrieveOne(Object id) {
+    public Future<Book> retrieveOne(Long id) {
         Future<Book> bookFuture = Future.future();
 
         mongoClient.findOne(COLLECTION,
@@ -62,18 +60,6 @@ public class BookDAOMongoImpl extends BookDAO {
                     }
                 });
 
-//        JsonObject command = new JsonObject()
-//                .put("aggregate", COLLECTION)
-//                .put("project",
-////                        {mojID:"$_id", title:1, _id:0}
-//                        new JsonObject().put("bookid", id).put("title", 1));
-//        mongoClient.runCommand("aggregate", command, ar-> {
-//            if(ar.succeeded()) {
-//                System.out.println("REZULTAT: "+ar.result());
-//            } else {
-//                bookFuture.fail(ar.cause());
-//            }
-//        });
         return bookFuture;
     }
 
@@ -82,11 +68,9 @@ public class BookDAOMongoImpl extends BookDAO {
         Future<List<Book>> future = Future.future();
         mongoClient.find(COLLECTION, new JsonObject(), ar -> {
             if (ar.succeeded()) {
-                System.out.println("Books found" + ar.result());
                 List<Book> result = ar.result().stream()
                         .map(Book::mapId)
                         .collect(Collectors.toList());
-                System.out.println("After converting: " + result);
                 future.complete(result);
             } else {
                 future.fail(ar.cause());

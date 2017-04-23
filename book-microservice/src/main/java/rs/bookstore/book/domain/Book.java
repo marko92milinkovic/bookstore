@@ -20,7 +20,10 @@ public class Book {
     private long bookId;
     private String title;
     private int year;
-    private List<Author> authors;
+    private int pages;
+    private double price;
+    private String shortDescription;
+    private List<String> authors;
 
     public Book() {
     }
@@ -58,12 +61,12 @@ public class Book {
     }
     
     @JsonManagedReference
-    public List<Author> getAuthors() {
+    public List<String> getAuthors() {
         return authors;
     }
 
     @JsonManagedReference
-    public void setAuthors(List<Author> authors) {
+    public void setAuthors(List<String> authors) {
         this.authors = authors;
     }
 
@@ -74,5 +77,31 @@ public class Book {
     public void setYear(int year) {
         this.year = year;
     }
+
+    public double getPrice() {
+        return price;
+    }
+
+    public void setPrice(double price) {
+        this.price = price;
+    }
+
+    public String getShortDescription() {
+        return shortDescription;
+    }
+
+    public void setShortDescription(String shortDescription) {
+        this.shortDescription = shortDescription;
+    }
+
+    public int getPages() {
+        return pages;
+    }
+
+    public void setPages(int pages) {
+        this.pages = pages;
+    }
+    
+    
 
 }

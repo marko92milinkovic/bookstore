@@ -5,6 +5,7 @@
  */
 package rs.bookstore.apigateway;
 
+import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -21,6 +22,7 @@ import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CookieHandler;
 import io.vertx.ext.web.handler.FormLoginHandler;
+//import io.vertx.ext.web.handler.FormLoginHandler;
 import io.vertx.ext.web.handler.RedirectAuthHandler;
 import io.vertx.ext.web.handler.SessionHandler;
 import io.vertx.ext.web.handler.StaticHandler;
@@ -44,21 +46,21 @@ import rs.bookstore.lib.MicroServiceVerticle;
  * @author markom
  */
 public class HttpServerVerticle extends MicroServiceVerticle {
-
+    
     MongoAuth authProvider;
     //temporary storage
     List<JsonObject> reviews = new ArrayList<>();
-
+    
     @Override
     public void start(Future<Void> startFuture) throws Exception {
         super.start();
         String uri = "mongodb://localhost:27017";
         String db = "master";
-
+        
         JsonObject mongoconfig = new JsonObject()
                 .put("connection_string", uri)
                 .put("db_name", db);
-
+        
         MongoClient client = MongoClient.createShared(vertx, mongoconfig);
         JsonObject authProperties = new JsonObject();
         authProvider = MongoAuth.create(client, authProperties);
@@ -67,7 +69,7 @@ public class HttpServerVerticle extends MicroServiceVerticle {
         authProvider.setUsernameField("username");
         authProvider.getHashStrategy().setSaltStyle(HashSaltStyle.NO_SALT);
         authProvider.setPermissionField("permission");
-
+        
         Router router = Router.router(vertx);
 
         // We need cookies, sessions and request bodies
@@ -79,10 +81,10 @@ public class HttpServerVerticle extends MicroServiceVerticle {
         router.route().handler(UserSessionHandler.create(authProvider));
 
         // Any requests to URI starting '/private/' require login
-        router.route("/private/*").handler(RedirectAuthHandler.create(authProvider, "/loginpage.html"));
+        router.route("/private/*").handler(RedirectAuthHandler.create(authProvider, "/view/login.html"));
         // Any requests to URI starting '/api/' require login
-        //---------------------------OTKOMENTARISATI---------------
-//        router.route("/api/*").handler(RedirectAuthHandler.create(authProvider, "/loginpage.html"));
+//        ---------------------------OTKOMENTARISATI---------------
+        router.route("/auth/*").handler(RedirectAuthHandler.create(authProvider, "/view/login.html"));
 
         // book api dispatcher
         router.route("/api/bookservice/*").handler(this::dispatchBookRequests);
@@ -95,8 +97,10 @@ public class HttpServerVerticle extends MicroServiceVerticle {
         router.route("/private/*").handler(StaticHandler.create().setCachingEnabled(false).setWebRoot("private"));
 
         // Handles the actual login
-        router.post("/loginhandler").handler(FormLoginHandler.create(authProvider));
-        router.route("/customer/get").handler(this::getCustomerCredentials);
+        router.post("/loginhandler").handler(FormLoginHandler.create(authProvider)
+                .setDirectLoggedInOKURL("/")
+                .setReturnURLParam("/loginFailed"));
+        router.route("/auth/customer/get").handler(this::getCustomerCredentials);
 
         // Implement logout
         router.route("/logout").handler(context -> {
@@ -107,8 +111,8 @@ public class HttpServerVerticle extends MicroServiceVerticle {
 
         // Serve the non private static pages
         router.route().handler(StaticHandler.create());
-
-        vertx.createHttpServer().requestHandler(router::accept).listen(8500, ar -> {
+        
+        vertx.createHttpServer().requestHandler(router::accept).listen(8080, ar -> {
             if (ar.succeeded()) {
                 startFuture.complete();
             } else {
@@ -116,31 +120,31 @@ public class HttpServerVerticle extends MicroServiceVerticle {
             }
         });
     }
-
+    
     private Future<List<Record>> getHttpMicroservices() {
         Future<List<Record>> recordsFuture = Future.future();
         discovery.getRecords(record -> record.getType().equals(HttpEndpoint.TYPE),
                 recordsFuture);
         return recordsFuture;
     }
-
+    
     private void dispatchBookRequests(RoutingContext rc) {
-
+        
         circuitBreaker.execute(cbFuture -> {
             discovery.getRecord(record
                     -> record.getType().equals(HttpEndpoint.TYPE)
                     && record.getName().equals("book.microservice"), ar -> {
-
+                
                 if (ar.succeeded() && ar.result() != null) {
-
+                    
                     Record bookMicroserviceRecord = ar.result();
                     HttpClient httpClient
                             = discovery.getReference(bookMicroserviceRecord).get();
-
+                    
                     String path = rc.request().uri();
-
+                    
                     String apiPAth = (path.split("/api/bookservice"))[1];
-
+                    
                     HttpClientRequest get = httpClient.request(rc.request().method(), apiPAth, booksResponse -> {
                         booksResponse.bodyHandler(body -> {
                             if (booksResponse.statusCode() >= 500) {
@@ -178,25 +182,25 @@ public class HttpServerVerticle extends MicroServiceVerticle {
             }
         });
     }
-
+    
     private void getCustomerCredentials(RoutingContext rc) {
         if (rc.user() == null) {
             rc.response().setStatusCode(401).end("No user authenticated");
             return;
         }
-
+        
         JsonObject principal = rc.user().principal();
         System.out.println("Principal is: " + principal);
         String username = principal.getString("username");
         Long customer_id = principal.getLong("customer_id");
-
+        
         if (username == null || customer_id == null) {
             rc.response()
                     .putHeader("content-type", "application/json")
                     .end(new Customer(
                             new JsonObject()
-                                    .put("username", "testUsername")
-                                    .put("id", "testId")).toJson().encodePrettily());
+                            .put("username", "testUsername")
+                            .put("id", "testId")).toJson().encodePrettily());
         } else {
             Future<CustomerService> futureCustomerService = Future.future();
             EventBusService.getServiceProxyWithJsonFilter(
@@ -208,12 +212,25 @@ public class HttpServerVerticle extends MicroServiceVerticle {
                 Future<Customer> customerFuture = Future.future();
                 customerService.getCustomerByUsername(username, customerFuture.completer());
                 return customerFuture;
-            })
-                    .setHandler(resultHandlerNonEmpty(rc));
+            }).setHandler(ar-> {
+                if (ar.succeeded()) {
+                Customer res = ar.result();
+                if (res == null) {
+                    rc.response().end("NOT found....see line 137");
+                } else {
+                    rc.response()
+                            .putHeader("content-type", "application/json")
+                            .end(res.toJson().encodePrettily());
+                }
+            } else {
+                rc.response().end(ar.cause().getMessage());
+                ar.cause().printStackTrace();
+            }
+            });
         }
-
+        
     }
-
+    
     private void dispatchReviewRequest(RoutingContext rc) {
         User user = rc.user();
 
@@ -226,7 +243,6 @@ public class HttpServerVerticle extends MicroServiceVerticle {
         int rate = Integer.parseInt(rc.request().getParam("rate"));
         int bookId = Integer.parseInt(rc.request().getParam("bookId"));
 
-
         //send comment to review-service
         JsonObject review = new JsonObject()
                 .put("comment", comment)
@@ -234,7 +250,7 @@ public class HttpServerVerticle extends MicroServiceVerticle {
                 .put("bookId", bookId)
                 .put("creatorId", creatorId);
         reviews.add(review);
-                
+        
         OptionalDouble avgRateOptional = reviews.stream().mapToInt(r -> r.getInteger("rate")).average();
         double avgRate = rate;
         if (avgRateOptional.isPresent()) {
@@ -263,11 +279,11 @@ public class HttpServerVerticle extends MicroServiceVerticle {
             }
         };
     }
-
+    
     private SockJSHandler eventbusReviewsHandler() {
         BridgeOptions bridgeOptions = new BridgeOptions()
                 .addOutboundPermitted(new PermittedOptions().setAddressRegex("book\\.reviews\\.[0-9]+"));
-
+        
         return SockJSHandler.create(vertx).bridge(bridgeOptions);
     }
 }

@@ -32,7 +32,7 @@ public class BookDAOSqlImpl extends BookDAO {
     }
 
     @Override
-    public Future<Book> retrieveOne(Object id) {
+    public Future<Book> retrieveOne(Long id) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 

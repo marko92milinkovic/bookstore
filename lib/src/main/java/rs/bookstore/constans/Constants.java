@@ -3,15 +3,12 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package rs.bookstore.book.dao;
-
-import rs.bookstore.book.domain.Book;
-import rs.bookstore.lib.repository.Repository;
+package rs.bookstore.constans;
 
 /**
  *
  * @author marko
  */
-public abstract class BookDAO implements Repository<Book, Long> {
-   
+public class Constants {
+    public final static Integer REVIEW_SERVICE_PORT = 9700;
 }

@@ -7,6 +7,7 @@ package rs.bookstore.reviews;
 
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
+import java.util.Date;
 
 /**
  *
@@ -17,9 +18,10 @@ public class Review {
 
     private Long bookId;
     private Long reviewId;
-    private Long creatorId;
+    private Long userId;
     private int rate;
     private String comment;
+    private String time;
 
     public Review() {
     }
@@ -66,12 +68,20 @@ public class Review {
         this.comment = comment;
     }
 
-    public Long getCreatorId() {
-        return creatorId;
+    public Long getUserId() {
+        return userId;
     }
 
-    public void setCreatorId(Long creatorId) {
-        this.creatorId = creatorId;
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public String getTime() {
+        return time;
+    }
+
+    public void setTime(String time) {
+        this.time = time;
     }
 
 }

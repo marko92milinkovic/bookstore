@@ -21,5 +21,6 @@ public interface ReviewService {
 
     void addReview(Review review, Handler<AsyncResult<Void>> resultHandler);
     void getAllReviews(Handler<AsyncResult<List<Review>>> resultHandler);
+    void getReviewsByBookId(Long bookId, Handler<AsyncResult<List<Review>>> resultHandler);
     
 }
