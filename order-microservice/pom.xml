@@ -8,4 +8,27 @@
     </parent>
     <artifactId>order-microservice</artifactId>
     <packaging>jar</packaging>
+    
+    <properties>
+        <main.verticle>rs.bookstore.order.api.OrderApiVerticle</main.verticle>
+    </properties>
+    <dependencies>
+        <dependency>
+            <groupId>rs.bookstore</groupId>
+            <artifactId>lib</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+    
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-shade-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+    
 </project>

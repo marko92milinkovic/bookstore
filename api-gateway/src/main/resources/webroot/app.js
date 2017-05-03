@@ -29,6 +29,12 @@ app.config(['$routeProvider', function ($routeProvider) {
         }).when('/account', {
             templateUrl: '../../private/account.html',
             controller: 'AccountCtrl'
+        }).when('/orders', {
+            templateUrl: '../../private/orders.html',
+            controller: 'OrdersCtrl'
+        }).when('/cart', {
+            templateUrl: '../../private/cart.html',
+            controller: 'CartCtrl'
         }).when('/404', {
             templateUrl: 'view/404.html'
         }).otherwise({

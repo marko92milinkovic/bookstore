@@ -14,6 +14,7 @@
         <module>customer-microservice</module>
         <module>inventory-microservice</module>
         <module>reviews-service</module>
+        <module>cart-service</module>
     </modules>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

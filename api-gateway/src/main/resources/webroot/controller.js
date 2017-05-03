@@ -15,34 +15,42 @@ app.controller('HomeCtrl', function ($scope, $http, $templateCache, $routeParams
 });
 
 app.controller('AccountCtrl', function ($scope, $http, $templateCache, $routeParams) {
-    $scope.user= {};
-        $http.get('/auth/customer/get').then(function (response) {
+    $scope.user = {};
+    $http.get('/auth/customer/get').then(function (response) {
         $scope.user = response.data;
     });
 });
 
-app.controller('LoginCtrl', function ($scope, $http, $templateCache, $routeParams) {
-    console.log("LogIn CTRL was looked for");
-//    $scope.credentials = {};
-//    $scope.login = function () {
-//        console.log("subited");
-//        var username = $scope.credentials.username;
-//        var password = $scope.credentials.password;
-//
-//        var auth = {username: username, password: password};
-//        console.log("Saljem podatke: " + auth);
-//        $http.post('/loginhandler', auth).then(function (response) {
-//            console.log("login RESP: " + response.data);
-//        });
-//    };
-});
-
-
-
 app.controller('BookCtrl', function ($scope, $http, $templateCache, $routeParams) {
     $scope.book = {};
+    $scope.inventory = true;
+
     $http.get('/api/bookservice/books/' + $routeParams.bookId).then(function (response) {
         console.log("sending http request");
         $scope.book = response.data;
     });
+});
+
+app.controller('CartCtrl', function () {
+
+});
+
+app.controller('OrdersCtrl', function () {
+
+});
+
+
+app.controller('AddToCartCtrl', function ($scope, $http, $rootScope) {
+    $scope.bookId = "";
+
+    $scope.addToCart = function () {
+        var data = {
+            cartEventType: "ADD_ITEM",
+            bookId: $scope.book.bookId
+        };
+
+        $http.post("/api/cart/events", data).then(function (response) {
+            //should increase number of items in cart
+        });
+    };
 });

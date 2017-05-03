@@ -7,6 +7,7 @@ package rs.bookstore.book.domain;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import io.vertx.codegen.annotations.DataObject;
+import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.core.json.JsonObject;
 import java.util.List;
 
@@ -41,12 +42,12 @@ public class Author {
         this.name = name;
     }
 
-    @JsonBackReference
+    @GenIgnore
     public List<Book> getBooks() {
         return books;
     }
 
-    @JsonBackReference
+    @GenIgnore
     public void setBooks(List<Book> books) {
         this.books = books;
     }

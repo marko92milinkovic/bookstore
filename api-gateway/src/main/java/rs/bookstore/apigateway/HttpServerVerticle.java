@@ -5,7 +5,6 @@
  */
 package rs.bookstore.apigateway;
 
-import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -84,7 +83,7 @@ public class HttpServerVerticle extends MicroServiceVerticle {
         router.route("/private/*").handler(RedirectAuthHandler.create(authProvider, "/view/login.html"));
         // Any requests to URI starting '/api/' require login
 //        ---------------------------OTKOMENTARISATI---------------
-        router.route("/auth/*").handler(RedirectAuthHandler.create(authProvider, "/view/login.html"));
+//        router.route("/auth/*").handler(RedirectAuthHandler.create(authProvider, "/view/login.html"));
 
         // book api dispatcher
         router.route("/api/bookservice/*").handler(this::dispatchBookRequests);
@@ -98,7 +97,7 @@ public class HttpServerVerticle extends MicroServiceVerticle {
 
         // Handles the actual login
         router.post("/loginhandler").handler(FormLoginHandler.create(authProvider)
-                .setDirectLoggedInOKURL("/")
+                .setDirectLoggedInOKURL("/#!/account")
                 .setReturnURLParam("/loginFailed"));
         router.route("/auth/customer/get").handler(this::getCustomerCredentials);
 
@@ -108,6 +107,9 @@ public class HttpServerVerticle extends MicroServiceVerticle {
             // Redirect back to the index page
             context.response().putHeader("location", "/").setStatusCode(302).end();
         });
+        
+        router.post("/api/cart/events").handler(this::addToCart);
+
 
         // Serve the non private static pages
         router.route().handler(StaticHandler.create());
@@ -120,6 +122,12 @@ public class HttpServerVerticle extends MicroServiceVerticle {
             }
         });
     }
+    
+    private void addToCart(RoutingContext rc) {
+        System.out.println(rc.getBodyAsJson().encodePrettily());
+        rc.response().end(new JsonObject().put("resp", "ok").encode());
+    }
+ 
     
     private Future<List<Record>> getHttpMicroservices() {
         Future<List<Record>> recordsFuture = Future.future();
@@ -267,7 +275,7 @@ public class HttpServerVerticle extends MicroServiceVerticle {
             if (ar.succeeded()) {
                 T res = ar.result();
                 if (res == null) {
-                    context.response().end("NOT found....see line 137");
+                    context.response().end("NOT found....see line 279");
                 } else {
                     context.response()
                             .putHeader("content-type", "application/json")

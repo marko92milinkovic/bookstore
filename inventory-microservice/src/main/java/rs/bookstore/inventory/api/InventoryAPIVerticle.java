@@ -5,7 +5,6 @@
  */
 package rs.bookstore.inventory.api;
 
-import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
@@ -27,17 +26,21 @@ public class InventoryAPIVerticle extends MicroServiceVerticle {
         router.get(API_DECR).handler(this::decrease);
         router.get(API_INVENTORY).handler(this::retrieveInventory);
 
-        vertx.createHttpServer().requestHandler(router::accept).listen(9003, "localhost");
+        int port = config().getInteger("http.port", 9003);
+        String host = config().getString("host", "localhost");
 
-        vertx.deployVerticle("src/main/resources/InventoryStorageVerticle.groovy", new DeploymentOptions(config().put("test", "testing")), ar -> {
-            if (ar.succeeded()) {
-                startFuture.complete();
-            } else {
-                ar.cause().printStackTrace();
-                startFuture.fail(ar.cause());
-            }
-        });
+        vertx.createHttpServer().requestHandler(router::accept).listen(port, host);
 
+        vertx.deployVerticle("src/main/resources/InventoryStorageVerticle.groovy",
+                ar -> {
+                    if (ar.succeeded()) {
+                        publishHttpEndpoint("inventory-service", "localhost", 9003, startFuture.completer());
+                    } else {
+                        ar.cause().printStackTrace();
+                        startFuture.fail(ar.cause());
+                    }
+                }
+        );
     }
 
     private void retrieveInventory(RoutingContext rc) {

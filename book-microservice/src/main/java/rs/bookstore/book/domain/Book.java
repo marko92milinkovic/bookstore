@@ -60,12 +60,10 @@ public class Book {
         this.title = title;
     }
     
-    @JsonManagedReference
     public List<String> getAuthors() {
         return authors;
     }
 
-    @JsonManagedReference
     public void setAuthors(List<String> authors) {
         this.authors = authors;
     }
