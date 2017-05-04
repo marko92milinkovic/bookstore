@@ -14,38 +14,37 @@ import io.vertx.servicediscovery.types.HttpEndpoint;
 import io.vertx.servicediscovery.types.MessageSource;
 import java.util.List;
 import rs.bookstore.lib.MicroServiceVerticle;
+import rs.bookstore.lib.RxMicroServiceVerticle;
 import rs.bookstore.order.Order;
+import rs.bookstore.order.impl.OrderServiceImpl;
 import rs.bookstore.order.service.OrderService;
 
 /**
  *
  * @author marko
  */
-public class OrderDispatcher extends MicroServiceVerticle {
+public class OrderDispatcher extends RxMicroServiceVerticle {
 
-    private final OrderService orderService;
-
-    public OrderDispatcher(OrderService orderService) {
-        this.orderService = orderService;
-    }
+    private final OrderService orderService = new OrderServiceImpl(vertx, config());
 
     @Override
     public void start(Future<Void> future) throws Exception {
         super.start();
-        MessageSource.<JsonObject>getConsumer(discovery,
-                new JsonObject().put("name", "*place name*"),
-                ar -> {
-                    if (ar.succeeded()) {
-                        MessageConsumer<JsonObject> orderConsumer = ar.result();
-                        orderConsumer.handler(message -> {
-                            Order wrappedOrder = wrapRawOrder(message.body());
-                            dispatchOrder(wrappedOrder, message);
-                        });
-                        future.complete();
-                    } else {
-                        future.fail(ar.cause());
-                    }
-                });
+        //Rxify this!!
+//        MessageSource.<JsonObject>getConsumer(discovery,
+//                new JsonObject().put("name", "*place name*"),
+//                ar -> {
+//                    if (ar.succeeded()) {
+//                        MessageConsumer<JsonObject> orderConsumer = ar.result();
+//                        orderConsumer.handler(message -> {
+//                            Order wrappedOrder = wrapRawOrder(message.body());
+//                            dispatchOrder(wrappedOrder, message);
+//                        });
+//                        future.complete();
+//                    } else {
+//                        future.fail(ar.cause());
+//                    }
+//                });
     }
 
     private Order wrapRawOrder(JsonObject orderAsJson) {
@@ -71,9 +70,9 @@ public class OrderDispatcher extends MicroServiceVerticle {
         Future<Void> future = Future.future();
         // get REST endpoint
         Future<HttpClient> clientFuture = Future.future();
-        HttpEndpoint.getClient(discovery,
-                new JsonObject().put("name", "inventory-service"),
-                clientFuture.completer());
+//        HttpEndpoint.getClient(discovery,
+//                new JsonObject().put("name", "inventory-service"),
+//                clientFuture.completer());
         // modify the inventory changes via REST API
         return future;
     }

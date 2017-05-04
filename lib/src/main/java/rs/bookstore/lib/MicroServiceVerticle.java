@@ -79,14 +79,6 @@ public abstract class MicroServiceVerticle extends AbstractVerticle {
     //We need to give every service a proper name so that we can retrieve it by name
     //OBRATI PAZNJU na meta data za API gateway
     private void publish(Record record, Handler<AsyncResult<Void>> completionHandler) {
-        if (discovery == null) {
-            try {
-                start();
-            } catch (Exception e) {
-                throw new RuntimeException("Cannot create discovery service");
-            }
-        }
-
         discovery.publish(record, ar -> {
             if (ar.succeeded()) {
                 registeredRecords.add(record);
