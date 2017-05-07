@@ -34,7 +34,7 @@ public class CartEvent {
         CartEventConverter.fromJson(json, this);
         return json;
     }
-
+    
     public CartEvent(CartEventType cartEventType, long customerId, long bookId, int amount) {
         this.cartEventType = cartEventType;
         this.customerId = customerId;

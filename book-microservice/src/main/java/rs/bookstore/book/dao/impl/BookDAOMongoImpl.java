@@ -54,7 +54,7 @@ public class BookDAOMongoImpl extends BookDAO {
                 new JsonObject().put("_id", id),
                 new JsonObject(), ar -> {
                     if (ar.succeeded()) {
-                        bookFuture.complete(Book.mapId(ar.result()));
+                        bookFuture.complete(new Book(ar.result()));
                     } else {
                         bookFuture.fail(ar.cause());
                     }
@@ -69,7 +69,7 @@ public class BookDAOMongoImpl extends BookDAO {
         mongoClient.find(COLLECTION, new JsonObject(), ar -> {
             if (ar.succeeded()) {
                 List<Book> result = ar.result().stream()
-                        .map(Book::mapId)
+                        .map(Book::new)
                         .collect(Collectors.toList());
                 future.complete(result);
             } else {

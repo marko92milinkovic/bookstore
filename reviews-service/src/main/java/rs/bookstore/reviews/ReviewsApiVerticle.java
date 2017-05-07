@@ -12,7 +12,7 @@ import io.vertx.rxjava.core.http.HttpServerResponse;
 import io.vertx.rxjava.ext.web.Router;
 import io.vertx.rxjava.ext.web.RoutingContext;
 import io.vertx.rxjava.ext.web.handler.BodyHandler;
-import rs.bookstore.constans.Constants;
+import rs.bookstore.constants.PortsConstants;
 import rs.bookstore.lib.MicroServiceVerticle;
 
 /**
@@ -37,7 +37,7 @@ public class ReviewsApiVerticle extends MicroServiceVerticle {
         router.post(ADD).handler(this::addReview);
         router.get(GET_ALL_BY_BOOKID).handler(this::retrieveAllByBookId);
 
-        int httpPort = config().getInteger("http.port", Constants.REVIEW_SERVICE_PORT);
+        int httpPort = config().getInteger("http.port", PortsConstants.REVIEW_SERVICE_PORT);
         String host = config().getString("host", "localhost");
         rxVertx.createHttpServer().requestHandler(router::accept).listen(httpPort, host);
 

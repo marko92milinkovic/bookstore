@@ -16,6 +16,7 @@ import io.vertx.ext.web.handler.BodyHandler;
 import rs.bookstore.book.domain.Book;
 import rs.bookstore.book.service.BookService;
 import rs.bookstore.book.service.impl.BookServiceImpl;
+import rs.bookstore.constants.MicroServiceNamesConstants;
 import rs.bookstore.lib.MicroServiceVerticle;
 
 /**
@@ -48,7 +49,7 @@ public class BookRestAPIVerticle extends MicroServiceVerticle {
 
         createHttpServer(router, host, port)
                 .compose(server -> {
-                    publishHttpEndpoint("book.microservice", host, port, future);
+                    publishHttpEndpoint(MicroServiceNamesConstants.BOOK_SERVICE, host, port, future);
                 }, future)
                 .setHandler(startFuture.completer());
 
@@ -110,13 +111,6 @@ public class BookRestAPIVerticle extends MicroServiceVerticle {
                 rc.response().end(new JsonArray(ar.result()).encodePrettily());
             }
         });
-    }
-
-    private Future<HttpServer> createHttpServer(Router router, String host, int port) {
-        Future<HttpServer> future = Future.future();
-        HttpServer httpServer = vertx.createHttpServer();
-        httpServer.requestHandler(router::accept).listen(port, host, future.completer());
-        return future;
     }
 
     private static final String API_ADD = "/add";

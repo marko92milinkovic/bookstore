@@ -36,6 +36,7 @@ import io.vertx.servicediscovery.types.HttpEndpoint;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalDouble;
+import rs.bookstore.constants.MicroServiceNamesConstants;
 import rs.bookstore.customer.service.Customer;
 import rs.bookstore.customer.service.CustomerService;
 import rs.bookstore.lib.MicroServiceVerticle;
@@ -141,7 +142,7 @@ public class HttpServerVerticle extends MicroServiceVerticle {
         circuitBreaker.execute(cbFuture -> {
             discovery.getRecord(record
                     -> record.getType().equals(HttpEndpoint.TYPE)
-                    && record.getName().equals("book.microservice"), ar -> {
+                    && record.getName().equals(MicroServiceNamesConstants.BOOK_SERVICE), ar -> {
                 
                 if (ar.succeeded() && ar.result() != null) {
                     

@@ -18,9 +18,17 @@ public class Order {
     
     private long orderId;
     private long customerId;
-    private long payId;
+    private long paymentId;
     private List<BookItem> bookItems;
     private double totalPrice;
+
+    public Order(long orderId, long customerId, long paymentId, List<BookItem> bookItems, double totalPrice) {
+        this.orderId = orderId;
+        this.customerId = customerId;
+        this.paymentId = paymentId;
+        this.bookItems = bookItems;
+        this.totalPrice = totalPrice;
+    }
 
     public Order(JsonObject json) {
         OrderConverter.fromJson(json, this);

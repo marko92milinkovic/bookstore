@@ -9,6 +9,8 @@ import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import rs.bookstore.constants.MicroServiceNamesConstants;
+import rs.bookstore.constants.PortsConstants;
 import rs.bookstore.lib.MicroServiceVerticle;
 
 /**
@@ -34,7 +36,8 @@ public class InventoryAPIVerticle extends MicroServiceVerticle {
         vertx.deployVerticle("src/main/resources/InventoryStorageVerticle.groovy",
                 ar -> {
                     if (ar.succeeded()) {
-                        publishHttpEndpoint("inventory-service", "localhost", 9003, startFuture.completer());
+                        publishHttpEndpoint(MicroServiceNamesConstants.INVENTORY_SERVICE,
+                                "localhost", PortsConstants.INVENTORY_SERVICE_PORT, startFuture.completer());
                     } else {
                         ar.cause().printStackTrace();
                         startFuture.fail(ar.cause());

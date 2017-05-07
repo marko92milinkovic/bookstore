@@ -11,11 +11,11 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.rxjava.core.Future;
 import io.vertx.rxjava.core.Vertx;
 import java.util.List;
-import java.util.stream.Collectors;
 import rs.bookstore.order.Order;
 import rs.bookstore.order.repository.OrderRxRepository;
 import rs.bookstore.order.repository.impl.OrderRxRepositoryImpl;
 import rs.bookstore.order.service.OrderService;
+import rx.Completable;
 
 public class OrderServiceImpl implements OrderService {
 

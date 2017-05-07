@@ -5,7 +5,6 @@
  */
 package rs.bookstore.book.domain;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
 import java.util.List;
@@ -29,6 +28,7 @@ public class Book {
     }
 
     public Book(JsonObject json) {
+        json.put("bookId", json.getLong("_id"));
         BookConverter.fromJson(json, this);
     }
 
@@ -36,12 +36,6 @@ public class Book {
         JsonObject json = new JsonObject();
         BookConverter.toJson(this, json);
         return json;
-    }
-
-    //fix this
-    public static Book mapId(JsonObject json) {
-        JsonObject mapper = json.copy().put("bookId", json.getLong("_id"));
-        return new Book(mapper);
     }
 
     public long getBookId() {

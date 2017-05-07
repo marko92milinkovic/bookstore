@@ -7,6 +7,11 @@ package rs.bookstore.order.api;
 
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
+import io.vertx.core.json.Json;
+import io.vertx.rx.java.RxHelper;
+import io.vertx.rxjava.ext.web.Router;
+import io.vertx.serviceproxy.ProxyHelper;
+import rs.bookstore.constants.PortsConstants;
 import rs.bookstore.lib.RxMicroServiceVerticle;
 import rs.bookstore.order.impl.OrderServiceImpl;
 import rs.bookstore.order.service.OrderService;
@@ -27,10 +32,30 @@ public class OrderApiVerticle extends RxMicroServiceVerticle {
         super.start(); //To change body of generated methods, choose Tools | Templates.
 
         this.orderService = new OrderServiceImpl(vertx, config());
-//        ProxyHelper.registerService(OrderService.class, vertx, orderService, SERVICE_ADDRESS);
+        ProxyHelper.registerService(OrderService.class, vertx.getDelegate(), orderService, SERVICE_ADDRESS);
         publishEventBusService(SERVICE_NAME, SERVICE_ADDRESS, OrderService.class)
                 .concatWith(prepareDispatcher())
                 .subscribe(startFuture::complete, startFuture::fail, () -> System.out.println("Order and dispatch verticles prepared"));
+
+        int port = config().getInteger("http.port", PortsConstants.ORDERS_SERVICE_PORT);
+        String host = config().getString("host", "localhost");
+        Router router = Router.router(vertx);
+
+        router.get("/getall/:customerId")
+                .handler(rc -> {
+                    orderService.retrieveOrdersForCustomer(Long.parseLong(rc.pathParam("customerId")),
+                            RxHelper.toFuture(
+                                    //ok response
+                                    list -> rc.response().end(Json.encodePrettily(list)),
+                                    //not ok response
+                                    cause -> rc.response().end(cause.getMessage())));
+                });
+
+        vertx.createHttpServer()
+                .requestHandler(router::accept)
+                .rxListen(port, host)
+                .subscribe(server -> System.out.println("Order server deployed"), System.err::println);
+
     }
 
     private Single<Void> prepareDispatcher() {

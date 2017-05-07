@@ -3,35 +3,28 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package rs.bookstore.order;
+package rs.bookstore.cart;
 
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
+import rs.bookstore.order.Order;
 
 /**
  *
  * @author marko
  */
 @DataObject(generateConverter = true)
-public class BookItem {
+public class Checkout {
     
-    long bookId;
-    double price;
-    int amount;
-
-    public BookItem(long bookId, double price, int amount) {
-        this.bookId = bookId;
-        this.price = price;
-        this.amount = amount;
+    private Order order;
+    
+    public Checkout(JsonObject json) {
+        CheckoutConverter.fromJson(json, this);
     }
     
-    public BookItem (JsonObject json) {
-        BookItemConverter.fromJson(json, this);
-    }
-    
-    public JsonObject fromJson () {
+    public JsonObject toJson() {
         JsonObject json = new JsonObject();
-        BookItemConverter.toJson(this, json);
+        CheckoutConverter.toJson(this, json);
         return json;
     }
     

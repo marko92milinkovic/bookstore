@@ -6,3 +6,6 @@
 /inventory-microservice/target/
 /customer-microservice/target/
 /reviews-service/target/
+/cart-service/target/
+*/src/main/generated/
+*/src/main/asciidoc/
