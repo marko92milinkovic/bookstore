@@ -5,6 +5,7 @@
  */
 package rs.bookstore.book.api;
 
+import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerResponse;
@@ -45,14 +46,19 @@ public class BookRestAPIVerticle extends MicroServiceVerticle {
         String host = config().getString("service.book.host", "localhost");
         int port = config().getInteger("service.book.port", 9002);
 
-        Future<Void> future = Future.future();
-
         createHttpServer(router, host, port)
                 .compose(server -> {
-                    publishHttpEndpoint(MicroServiceNamesConstants.BOOK_SERVICE, host, port, future);
-                }, future)
-                .setHandler(startFuture.completer());
-
+                    Future<Void> httpFuture = Future.future();
+                    publishHttpEndpoint(MicroServiceNamesConstants.BOOK_SERVICE_HTTP, host, port, httpFuture);
+                    return httpFuture;
+                })
+                .compose(httpF -> {
+                    Future<Void> rpcFuture = Future.future();
+                    publishEventBusService(MicroServiceNamesConstants.BOOK_SERVICE_RPC,
+                            BookService.SERVICE_ADDRESS, BookService.class, rpcFuture);
+                    return rpcFuture;
+                }).setHandler(startFuture.completer());
+        
     }
 
     private void addBook(RoutingContext routingContext) {
@@ -107,7 +113,7 @@ public class BookRestAPIVerticle extends MicroServiceVerticle {
                 System.out.println("Failed: " + ar.cause());
                 rc.response().setStatusCode(500).end("Server error");
             } else {
-                System.out.println("RESULT: "+ar.result());
+                System.out.println("RESULT: " + ar.result());
                 rc.response().end(new JsonArray(ar.result()).encodePrettily());
             }
         });

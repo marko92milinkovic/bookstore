@@ -28,7 +28,7 @@ public interface CustomerService {
   /**
    * The address on which the service is published.
    */
-  String SERVICE_ADDRESS = "service.customer";
+  String SERVICE_ADDRESS = "service.customer.proxy";
     
     /**
      * Method called to create a proxy (to consume the service).

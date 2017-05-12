@@ -9,3 +9,5 @@
 /cart-service/target/
 */src/main/generated/
 */src/main/asciidoc/
+*/.vertx/
+/api-gateway/src/main/resources/webroot/node_modules

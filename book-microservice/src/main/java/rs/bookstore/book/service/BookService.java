@@ -27,11 +27,6 @@ import rs.bookstore.book.domain.Book;
 public interface BookService {
 
     /**
-     * The name of the event bus service.
-     */
-    String SERVICE_NAME = "product-eb-service";
-
-    /**
      * The address on which the service is published
      */
     String SERVICE_ADDRESS = "service.book";

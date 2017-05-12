@@ -16,11 +16,11 @@ import io.vertx.core.json.JsonObject;
 public class CartEvent {
 
     private long cartEventId;
-    private CartEventType cartEventType;
+    private CartEventType type;
     private long customerId;
     private long bookId;
     private int amount;
-    private long time = System.currentTimeMillis();
+    private long make_time = System.currentTimeMillis();
 
     public CartEvent() {
     }
@@ -36,7 +36,7 @@ public class CartEvent {
     }
     
     public CartEvent(CartEventType cartEventType, long customerId, long bookId, int amount) {
-        this.cartEventType = cartEventType;
+        this.type = cartEventType;
         this.customerId = customerId;
         this.bookId = bookId;
         this.amount = amount;
@@ -63,11 +63,11 @@ public class CartEvent {
     }
 
     public CartEventType getCartEventType() {
-        return cartEventType;
+        return type;
     }
 
     public void setCartEventType(CartEventType cartEventType) {
-        this.cartEventType = cartEventType;
+        this.type = cartEventType;
     }
 
     public long getCustomerId() {
@@ -95,11 +95,11 @@ public class CartEvent {
     }
 
     public long getTime() {
-        return time;
+        return make_time;
     }
 
     public void setTime(long time) {
-        this.time = time;
+        this.make_time = time;
     }
 
     public enum CartEventType {

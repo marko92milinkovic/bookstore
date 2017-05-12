@@ -142,7 +142,7 @@ public class HttpServerVerticle extends MicroServiceVerticle {
         circuitBreaker.execute(cbFuture -> {
             discovery.getRecord(record
                     -> record.getType().equals(HttpEndpoint.TYPE)
-                    && record.getName().equals(MicroServiceNamesConstants.BOOK_SERVICE), ar -> {
+                    && record.getName().equals(MicroServiceNamesConstants.BOOK_SERVICE_HTTP), ar -> {
                 
                 if (ar.succeeded() && ar.result() != null) {
                     

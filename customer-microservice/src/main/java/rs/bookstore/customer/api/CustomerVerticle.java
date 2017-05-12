@@ -19,7 +19,7 @@ public class CustomerVerticle extends MicroServiceVerticle {
 
     @Override
     public void start(Future<Void> future) throws Exception {
-
+        super.start();
         CustomerService service = CustomerService.createProxy(vertx);
 
         vertx.deployVerticle("/home/marko/NetBeansProjects/bookstore/customer-microservice/src/main/resources/service.js", ar -> {

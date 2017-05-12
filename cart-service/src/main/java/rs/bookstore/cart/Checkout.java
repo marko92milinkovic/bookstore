@@ -16,6 +16,7 @@ import rs.bookstore.order.Order;
 @DataObject(generateConverter = true)
 public class Checkout {
     
+    private String resultMessage;
     private Order order;
     
     public Checkout(JsonObject json) {
@@ -26,6 +27,22 @@ public class Checkout {
         JsonObject json = new JsonObject();
         CheckoutConverter.toJson(this, json);
         return json;
+    }
+
+    public String getResultMessage() {
+        return resultMessage;
+    }
+
+    public void setResultMessage(String resultMessage) {
+        this.resultMessage = resultMessage;
+    }
+
+    public Order getOrder() {
+        return order;
+    }
+
+    public void setOrder(Order order) {
+        this.order = order;
     }
     
 }
