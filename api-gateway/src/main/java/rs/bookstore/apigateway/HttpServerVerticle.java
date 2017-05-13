@@ -5,6 +5,7 @@
  */
 package rs.bookstore.apigateway;
 
+import io.vertx.circuitbreaker.HystrixMetricHandler;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -30,6 +31,9 @@ import io.vertx.ext.web.handler.sockjs.BridgeOptions;
 import io.vertx.ext.web.handler.sockjs.PermittedOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
 import io.vertx.ext.web.sstore.LocalSessionStore;
+import io.vertx.rx.java.RxHelper;
+import io.vertx.rxjava.core.Vertx;
+import io.vertx.rxjava.core.http.HttpClientResponse;
 import io.vertx.servicediscovery.Record;
 import io.vertx.servicediscovery.types.EventBusService;
 import io.vertx.servicediscovery.types.HttpEndpoint;
@@ -40,27 +44,28 @@ import rs.bookstore.constants.MicroServiceNamesConstants;
 import rs.bookstore.customer.service.Customer;
 import rs.bookstore.customer.service.CustomerService;
 import rs.bookstore.lib.MicroServiceVerticle;
+import rx.Observable;
 
 /**
  *
  * @author markom
  */
 public class HttpServerVerticle extends MicroServiceVerticle {
-    
+
     MongoAuth authProvider;
     //temporary storage
     List<JsonObject> reviews = new ArrayList<>();
-    
+
     @Override
     public void start(Future<Void> startFuture) throws Exception {
         super.start();
         String uri = "mongodb://localhost:27017";
         String db = "master";
-        
+
         JsonObject mongoconfig = new JsonObject()
                 .put("connection_string", uri)
                 .put("db_name", db);
-        
+
         MongoClient client = MongoClient.createShared(vertx, mongoconfig);
         JsonObject authProperties = new JsonObject();
         authProvider = MongoAuth.create(client, authProperties);
@@ -69,13 +74,13 @@ public class HttpServerVerticle extends MicroServiceVerticle {
         authProvider.setUsernameField("username");
         authProvider.getHashStrategy().setSaltStyle(HashSaltStyle.NO_SALT);
         authProvider.setPermissionField("permission");
-        
+
         Router router = Router.router(vertx);
 
         // We need cookies, sessions and request bodies
         router.route().handler(CookieHandler.create());
         router.route().handler(BodyHandler.create());
-        router.route().handler(SessionHandler.create(LocalSessionStore.create(vertx)));
+        router.route().handler(SessionHandler.create(LocalSessionStore.create(vertx, "shopping.session")));
 
         // We need a user session handler too to make sure the user is stored in the session between requests
         router.route().handler(UserSessionHandler.create(authProvider));
@@ -93,6 +98,13 @@ public class HttpServerVerticle extends MicroServiceVerticle {
         router.route("/api/reviews/*").handler(this::dispatchReviewRequest);
         router.route("/eventbus/reviews/*").handler(eventbusReviewsHandler());
 
+        //hystrix dashboard
+        // Register the metric handler
+        router.get("/hystrix-metrics").handler(HystrixMetricHandler.create(vertx));
+
+        //cart
+        router.route("/api/cartservice/*").handler(this::dispatchCartRequests);
+
         // Serve the static private pages from directory 'private'
         router.route("/private/*").handler(StaticHandler.create().setCachingEnabled(false).setWebRoot("private"));
 
@@ -108,13 +120,12 @@ public class HttpServerVerticle extends MicroServiceVerticle {
             // Redirect back to the index page
             context.response().putHeader("location", "/").setStatusCode(302).end();
         });
-        
-        router.post("/api/cart/events").handler(this::addToCart);
 
+        router.post("/api/cart/events").handler(this::addToCart);
 
         // Serve the non private static pages
         router.route().handler(StaticHandler.create());
-        
+
         vertx.createHttpServer().requestHandler(router::accept).listen(8080, ar -> {
             if (ar.succeeded()) {
                 startFuture.complete();
@@ -123,40 +134,33 @@ public class HttpServerVerticle extends MicroServiceVerticle {
             }
         });
     }
-    
+
     private void addToCart(RoutingContext rc) {
         System.out.println(rc.getBodyAsJson().encodePrettily());
         rc.response().end(new JsonObject().put("resp", "ok").encode());
     }
- 
-    
-    private Future<List<Record>> getHttpMicroservices() {
-        Future<List<Record>> recordsFuture = Future.future();
-        discovery.getRecords(record -> record.getType().equals(HttpEndpoint.TYPE),
-                recordsFuture);
-        return recordsFuture;
-    }
-    
+
     private void dispatchBookRequests(RoutingContext rc) {
-        
+
         circuitBreaker.execute(cbFuture -> {
             discovery.getRecord(record
                     -> record.getType().equals(HttpEndpoint.TYPE)
                     && record.getName().equals(MicroServiceNamesConstants.BOOK_SERVICE_HTTP), ar -> {
-                
+
                 if (ar.succeeded() && ar.result() != null) {
-                    
+
                     Record bookMicroserviceRecord = ar.result();
                     HttpClient httpClient
                             = discovery.getReference(bookMicroserviceRecord).get();
-                    
+
                     String path = rc.request().uri();
-                    
+
                     String apiPAth = (path.split("/api/bookservice"))[1];
-                    
-                    HttpClientRequest get = httpClient.request(rc.request().method(), apiPAth, booksResponse -> {
+
+                    HttpClientRequest req = httpClient.request(rc.request().method(), apiPAth, booksResponse -> {
                         booksResponse.bodyHandler(body -> {
                             if (booksResponse.statusCode() >= 500) {
+                                cbFuture.fail(booksResponse.statusCode() + ": " + body.toString());
                             } else {
                                 HttpServerResponse toRsp = rc.response()
                                         .setStatusCode(booksResponse.statusCode());
@@ -168,8 +172,12 @@ public class HttpServerVerticle extends MicroServiceVerticle {
                             }
                         });
                     });
-                    System.out.println("Call book-microservice on url: " + get.uri());
-                    get.end();
+                    System.out.println("Call book-microservice on url: " + req.uri());
+                    if (rc.getBody() == null) {
+                        req.end();
+                    } else {
+                        req.end(rc.getBody());
+                    }
                 } else {
                     rc.response().end("Http microservices not found");
                     cbFuture.complete();
@@ -191,18 +199,84 @@ public class HttpServerVerticle extends MicroServiceVerticle {
             }
         });
     }
-    
+
+    private void dispatchCartRequests(RoutingContext rc) {
+        System.out.println("Hocu da dispatcujem carts");
+
+        User user = rc.user();
+        if (user == null) {
+            rc.response().setStatusCode(401).end("not logged in");
+            return;
+        }
+
+        circuitBreaker.execute(cbFuture -> {
+            discovery.getRecord(record
+                    -> record.getType().equals(HttpEndpoint.TYPE)
+                    && record.getName().equals(MicroServiceNamesConstants.CART_SERVICE_HTTP),
+                    RxHelper.toFuture(
+                            record -> {
+                                HttpClient httpClient
+                                = discovery.getReference(record).get();
+                                String apiPAth = (rc.request().uri().split("/api/cartservice"))[1];
+
+                                HttpClientRequest req = httpClient.request(rc.request().method(), apiPAth, response -> {
+                                    response.bodyHandler(body -> {
+                                        if (response.statusCode() >= 500) {
+                                            cbFuture.fail(response.statusCode() + ": " + body.toString());
+                                        } else {
+                                            HttpServerResponse toRsp = rc.response()
+                                                    .setStatusCode(response.statusCode());
+                                            response.headers().forEach(header -> {
+                                                toRsp.putHeader(header.getKey(), header.getValue());
+                                            });
+                                            
+                                            System.out.println("RESP is :"+body);
+                                            toRsp.end(body);
+                                            cbFuture.complete();
+                                        }
+                                    });
+                                });
+                                if (rc.user() != null) {
+                                    req.putHeader("user-principal", rc.user().principal().encode());
+                                }
+                                System.out.println("Call cart-microservice on url: " + req.uri());
+
+                                if (rc.getBody() != null) {
+                                    req.end(rc.getBody());
+                                } else {
+                                    req.end();
+                                }
+                                req.end();
+                            }, cause -> {
+                                rc.response().end("Http microservices not found");
+                                cbFuture.complete();
+                            })
+            );
+        }).setHandler(ar -> {
+            if (ar.failed()) {
+                ar.cause().printStackTrace();
+                rc.response()
+                        .setStatusCode(502)
+                        .putHeader("content-type", "application/json")
+                        .end(new JsonObject().put("error", "bad_gateway")
+                                //.put("message", ex.getMessage())
+                                .encodePrettily());
+            }
+        });
+
+    }
+
     private void getCustomerCredentials(RoutingContext rc) {
         if (rc.user() == null) {
             rc.response().setStatusCode(401).end("No user authenticated");
             return;
         }
-        
+
         JsonObject principal = rc.user().principal();
         System.out.println("Principal is: " + principal);
         String username = principal.getString("username");
         Long customer_id = principal.getLong("customer_id");
-        
+
         if (username == null || customer_id == null) {
             rc.response()
                     .putHeader("content-type", "application/json")
@@ -221,25 +295,26 @@ public class HttpServerVerticle extends MicroServiceVerticle {
                 Future<Customer> customerFuture = Future.future();
                 customerService.getCustomerByUsername(username, customerFuture.completer());
                 return customerFuture;
-            }).setHandler(ar-> {
+            }).setHandler(ar -> {
                 if (ar.succeeded()) {
-                Customer res = ar.result();
-                if (res == null) {
-                    rc.response().end("NOT found....see line 137");
+                    Customer res = ar.result();
+                    System.out.println("sending customer...... " + res);
+                    if (res == null) {
+                        rc.response().end("NOT found....see line 137");
+                    } else {
+                        rc.response()
+                                .putHeader("content-type", "application/json")
+                                .end(res.toJson().encodePrettily());
+                    }
                 } else {
-                    rc.response()
-                            .putHeader("content-type", "application/json")
-                            .end(res.toJson().encodePrettily());
+                    rc.response().end(ar.cause().getMessage());
+                    ar.cause().printStackTrace();
                 }
-            } else {
-                rc.response().end(ar.cause().getMessage());
-                ar.cause().printStackTrace();
-            }
             });
         }
-        
+
     }
-    
+
     private void dispatchReviewRequest(RoutingContext rc) {
         User user = rc.user();
 
@@ -259,13 +334,13 @@ public class HttpServerVerticle extends MicroServiceVerticle {
                 .put("bookId", bookId)
                 .put("creatorId", creatorId);
         reviews.add(review);
-        
+
         OptionalDouble avgRateOptional = reviews.stream().mapToInt(r -> r.getInteger("rate")).average();
         double avgRate = rate;
         if (avgRateOptional.isPresent()) {
             avgRate = avgRateOptional.getAsDouble();
         }
-        
+
         rc.vertx().eventBus().publish("book.reviews." + bookId, new JsonObject().put("review", review).put("avgRate", avgRate));
         rc.response().end("ok :) ");
     }
@@ -288,11 +363,11 @@ public class HttpServerVerticle extends MicroServiceVerticle {
             }
         };
     }
-    
+
     private SockJSHandler eventbusReviewsHandler() {
         BridgeOptions bridgeOptions = new BridgeOptions()
                 .addOutboundPermitted(new PermittedOptions().setAddressRegex("book\\.reviews\\.[0-9]+"));
-        
+
         return SockJSHandler.create(vertx).bridge(bridgeOptions);
     }
 }

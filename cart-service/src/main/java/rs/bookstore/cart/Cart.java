@@ -25,6 +25,7 @@ import rs.bookstore.order.BookItem;
 public class Cart {
 
     private List<BookItem> bookItems;
+    @GenIgnore
     private Map<Long, Integer> amountMap;
 
     public Cart() {
@@ -55,7 +56,7 @@ public class Cart {
         // The cart event must be a add or remove command event.
         boolean validCartEventType = Stream.of(CartEventType.ADD_ITEM, CartEventType.REMOVE_ITEM)
                 .anyMatch(cartEventType
-                        -> cartEvent.getCartEventType().equals(cartEventType));
+                        -> cartEventType.equals(cartEvent.getCartEventType()));
 
         if (validCartEventType) {
             // Update the aggregate view of each line item's quantity from the event type
@@ -73,13 +74,17 @@ public class Cart {
         return amountMap;
     }
 
-    public Cart setBookItems(List<BookItem> items) {
+    public void setBookItems(List<BookItem> items) {
         this.bookItems = items;
-        return this;
+    }
+
+    public List<BookItem> getBookItems() {
+        return bookItems;
     }
 
     @Override
     public String toString() {
-        return toJson().encode();
+        return "Cart{" + "bookItems=" + bookItems + ", amountMap=" + amountMap + '}';
     }
+
 }

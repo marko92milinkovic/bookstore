@@ -84,15 +84,15 @@ public class CartEventDAOImpl implements CartEventDAO {
     }
 
     private static final String SAVE_STATEMENT = "INSERT INTO `cart_event` "
-            + "(`type`, `customer_id`, `product_id`, `amount`, `make_time`) "
+            + "(`type`, `customerId`, `bookId`, `amount`, `make_time`) "
             + "VALUES (?, ?, ?, ?, ?)";
 
     private static final String RETRIEVE_STATEMENT = "SELECT * FROM `cart_event` WHERE id = ?";
 
     private static final String STREAM_STATEMENT = "SELECT * FROM cart_event c\n"
-            + "WHERE c.customer_id = ? AND c.make_time > coalesce(\n"
+            + "WHERE c.customerId = ? AND c.make_time > coalesce(\n"
             + "    (SELECT make_time FROM cart_event\n"
-            + "\t WHERE customer_id = c.customer_id AND (`type` = \"CHECKOUT\" OR `type` = \"CLEAR_CART\")\n"
+            + "\t WHERE customerId = c.customerId AND (`type` = \"CHECKOUT\" OR `type` = \"CLEAR_CART\")\n"
             + "     ORDER BY cart_event.make_time DESC\n"
             + "     LIMIT 1\n"
             + "     ), 0)\n"

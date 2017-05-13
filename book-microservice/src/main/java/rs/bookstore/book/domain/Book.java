@@ -28,7 +28,7 @@ public class Book {
     }
 
     public Book(JsonObject json) {
-        json.put("bookId", json.getLong("_id"));
+        json.put("bookId", json.getLong("_id", json.getLong("bookId", 8888l)));
         BookConverter.fromJson(json, this);
     }
 
@@ -53,7 +53,7 @@ public class Book {
     public void setTitle(String title) {
         this.title = title;
     }
-    
+
     public List<String> getAuthors() {
         return authors;
     }
@@ -93,7 +93,10 @@ public class Book {
     public void setPages(int pages) {
         this.pages = pages;
     }
-    
-    
+
+    @Override
+    public String toString() {
+        return "Book{" + "bookId=" + bookId + ", title=" + title + ", year=" + year + ", pages=" + pages + ", price=" + price + ", shortDescription=" + shortDescription + ", authors=" + authors + '}';
+    }
 
 }

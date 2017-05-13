@@ -14,8 +14,10 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
+import io.vertx.serviceproxy.ProxyHelper;
 import rs.bookstore.book.domain.Book;
 import rs.bookstore.book.service.BookService;
+import static rs.bookstore.book.service.BookService.SERVICE_ADDRESS;
 import rs.bookstore.book.service.impl.BookServiceImpl;
 import rs.bookstore.constants.MicroServiceNamesConstants;
 import rs.bookstore.lib.MicroServiceVerticle;
@@ -39,6 +41,7 @@ public class BookRestAPIVerticle extends MicroServiceVerticle {
         router.post(API_ADD).handler(this::addBook);
         router.get(API_GET_ONE).handler(this::getOne);
         router.get(API_GET_ALL).handler(this::retrieveAll);
+        ProxyHelper.registerService(BookService.class, vertx, bookService, SERVICE_ADDRESS);
 
         //API gateway can ensure if the endpoint is active
 //        enableHeartbeatCheck(router, config());
@@ -58,7 +61,7 @@ public class BookRestAPIVerticle extends MicroServiceVerticle {
                             BookService.SERVICE_ADDRESS, BookService.class, rpcFuture);
                     return rpcFuture;
                 }).setHandler(startFuture.completer());
-        
+
     }
 
     private void addBook(RoutingContext routingContext) {

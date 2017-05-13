@@ -26,6 +26,7 @@ public class CartEvent {
     }
 
     public CartEvent(JsonObject json) {
+        json.put("cartEventType", json.getString("type"));
         CartEventConverter.fromJson(json, this);
     }
 
@@ -34,7 +35,7 @@ public class CartEvent {
         CartEventConverter.fromJson(json, this);
         return json;
     }
-    
+
     public CartEvent(CartEventType cartEventType, long customerId, long bookId, int amount) {
         this.type = cartEventType;
         this.customerId = customerId;
@@ -108,4 +109,10 @@ public class CartEvent {
         CHECKOUT, // shopping cart checkout
         CLEAR_CART // clear the cart
     }
+
+    @Override
+    public String toString() {
+        return "CartEvent{" + "cartEventId=" + cartEventId + ", type=" + type + ", customerId=" + customerId + ", bookId=" + bookId + ", amount=" + amount + ", make_time=" + make_time + '}';
+    }
+
 }

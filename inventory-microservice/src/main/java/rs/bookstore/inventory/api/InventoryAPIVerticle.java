@@ -28,7 +28,7 @@ public class InventoryAPIVerticle extends MicroServiceVerticle {
         router.get(API_DECR).handler(this::decrease);
         router.get(API_INVENTORY).handler(this::retrieveInventory);
 
-        int port = config().getInteger("http.port", PortsConstants.INVENTORY_SERVICE_PORT);
+        int port = config().getInteger("http.port", PortsConstants.INVENTORY_SERVICE_HTTP_PORT);
         String host = config().getString("host", "localhost");
 
         vertx.createHttpServer().requestHandler(router::accept).listen(port, host);
@@ -37,7 +37,7 @@ public class InventoryAPIVerticle extends MicroServiceVerticle {
                 ar -> {
                     if (ar.succeeded()) {
                         publishHttpEndpoint(MicroServiceNamesConstants.INVENTORY_SERVICE,
-                                "localhost", PortsConstants.INVENTORY_SERVICE_PORT, startFuture.completer());
+                                "localhost", PortsConstants.INVENTORY_SERVICE_HTTP_PORT, startFuture.completer());
                     } else {
                         ar.cause().printStackTrace();
                         startFuture.fail(ar.cause());

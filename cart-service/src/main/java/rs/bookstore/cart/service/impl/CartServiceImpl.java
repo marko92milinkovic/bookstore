@@ -5,6 +5,7 @@
  */
 package rs.bookstore.cart.service.impl;
 
+import io.vertx.circuitbreaker.CircuitBreakerOptions;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -12,6 +13,7 @@ import io.vertx.core.http.HttpClient;
 import io.vertx.core.impl.CompositeFutureImpl;
 import io.vertx.core.json.JsonObject;
 import io.vertx.rx.java.RxHelper;
+import io.vertx.rxjava.circuitbreaker.CircuitBreaker;
 import io.vertx.rxjava.core.Vertx;
 import io.vertx.servicediscovery.ServiceDiscovery;
 import io.vertx.servicediscovery.types.EventBusService;
@@ -34,10 +36,20 @@ public class CartServiceImpl implements CartService {
 
     private final CartEventDAO repository;
     private final ServiceDiscovery discovery;
+    private final CircuitBreaker circuitBreaker;
 
     public CartServiceImpl(Vertx vertx, JsonObject config, ServiceDiscovery discovery) {
         this.discovery = discovery;
         repository = new CartEventDAOImpl(vertx, config);
+        // init circuit breaker instance
+        JsonObject cbOptions = config.getJsonObject("circuit-breaker") != null
+                ? config.getJsonObject("circuit-breaker") : new JsonObject();
+        circuitBreaker = CircuitBreaker.create(cbOptions.getString("name", "cb: cart->book"), vertx,
+                new CircuitBreakerOptions()
+                .setMaxFailures(cbOptions.getInteger("max-failures", 3))
+                .setTimeout(cbOptions.getLong("timeout", 4000L))
+                .setFallbackOnFailure(true)
+                .setResetTimeout(cbOptions.getLong("reset-timeout", 10000L)));
     }
 
     @Override
@@ -56,6 +68,7 @@ public class CartServiceImpl implements CartService {
                 .reduce(new Cart(), Cart::incorporate)
                 .toSingle()
                 .subscribe(future::complete, future::fail);
+
         future.compose(cart
                 -> getBookService()
                 .compose(service -> prepareBook(service, cart)) // prepare book data
@@ -91,7 +104,24 @@ public class CartServiceImpl implements CartService {
                 .stream()
                 .map(bookId -> {
                     Future<Book> future = Future.future();
-                    service.getBook(bookId, future.completer());
+                    circuitBreaker.execute(cbFuture -> {
+                        System.out.println("Saljem zahtev");
+                        service.getBook(bookId, RxHelper.toFuture(
+                                book -> {
+                                    cbFuture.complete();
+                                    future.complete(book);
+                                }, cause -> {
+                                    System.out.println("Problem");
+                                    cbFuture.fail(cause);
+                                }));
+                    }).setHandler(ar -> {
+                        if (ar.failed()) {
+                            System.out.println("CIRCUIT - BREAKER JE PUKAO jer "+ar.cause().getMessage());
+                            future.fail(ar.cause());
+                        } else {
+                            System.out.println("REZULTAT: "+ar.result());
+                        }
+                    });
                     return future;
                 })
                 .collect(Collectors.toList());
@@ -142,9 +172,8 @@ public class CartServiceImpl implements CartService {
                         item.getValue()))
                 .filter(item -> item.getAmount() > 0)
                 .collect(Collectors.toList());
-
-        Cart cart = rawCart.setBookItems(currentItems);
-        return Future.succeededFuture(cart);
+        rawCart.setBookItems(currentItems);
+        return Future.succeededFuture(rawCart);
     }
 
     private Book getBookFromStream(List<Book> bookList, Long bookId) {

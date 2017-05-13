@@ -32,7 +32,7 @@ app.controller('BookCtrl', function ($scope, $http, $templateCache, $routeParams
 });
 
 app.controller('CartCtrl', function () {
-
+    
 });
 
 app.controller('OrdersCtrl', function () {

@@ -13,7 +13,7 @@ public class MicroServiceNamesConstants {
 
     public static final String BOOK_SERVICE_HTTP = "book.microservice.http";
     public static final String BOOK_SERVICE_RPC = "book.microservice.rpc";
-    public static final String CART_SERVICE = "cart.microservice";
+    public static final String CART_SERVICE_HTTP = "cart.microservice.http";
     public static final String CUSTOMER_SERVICE = "customer.microservice";
     public static final String INVENTORY_SERVICE = "inventory.microservice";
 

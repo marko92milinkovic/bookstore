@@ -15,12 +15,16 @@ import io.vertx.ext.web.handler.CookieHandler;
 import io.vertx.ext.web.handler.SessionHandler;
 import io.vertx.ext.web.sstore.LocalSessionStore;
 import io.vertx.rx.java.RxHelper;
+import io.vertx.rxjava.core.Vertx;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import rs.bookstore.cart.Cart;
 import rs.bookstore.cart.Checkout;
 import rs.bookstore.cart.event.CartEvent;
 import rs.bookstore.cart.service.CartService;
+import rs.bookstore.cart.service.impl.CartServiceImpl;
+import rs.bookstore.constants.MicroServiceNamesConstants;
+import rs.bookstore.constants.PortsConstants;
 import rs.bookstore.lib.MicroServiceVerticle;
 
 /**
@@ -28,33 +32,44 @@ import rs.bookstore.lib.MicroServiceVerticle;
  * @author marko
  */
 public class RestApiCartVerticle extends MicroServiceVerticle {
-    
-    private final CartService cartService;
-    
-    public RestApiCartVerticle(CartService cartService) {
-        this.cartService = cartService;
-    }
-    
+
+    private CartService cartService;
+
     @Override
     public void start(Future<Void> startFuture) throws Exception {
         super.start();
-        
+
         Router router = Router.router(vertx);
         router.route().handler(BodyHandler.create());
-        
+
         router.post(API_ADD_CART_EVENT).handler(rc -> requireLogin(rc, this::addCartEvent));
         router.get(API_GET_CART).handler(rc -> requireLogin(rc, this::getCart));
         router.post(API_CHECKOUT).handler(rc -> requireLogin(rc, this::checkout));
+        router.get(API_GET_CART_TEST).handler(rc -> getCart(rc, 1l));
 
         //enable local session
         router.route().handler(CookieHandler.create());
         router.route().handler(SessionHandler.create(LocalSessionStore.create(vertx, "shopping.session")));
-        
+
+        cartService = new CartServiceImpl(Vertx.newInstance(vertx), config(), discovery);
+
+        int port = config().getInteger("http.port", PortsConstants.CART_SERVICE_HTTP_PORT);
+        String host = "localhost";
+        vertx.createHttpServer()
+                .requestHandler(router::accept)
+                .listen(port, host, RxHelper.toFuture(server
+                        -> publishHttpEndpoint(MicroServiceNamesConstants.CART_SERVICE_HTTP,
+                                host,
+                                port,
+                                startFuture.completer())));
+
     }
-    
+
     private void addCartEvent(RoutingContext rc, Long customerId) {
+        System.out.println("Ide zahtev");
         CartEvent cartEvent = new CartEvent(rc.getBodyAsJson());
         if (cartEvent.getAmount() > 0 && cartEvent.getCustomerId() == customerId) {
+            System.out.println("Dodajem event: " + cartEvent);
             cartService.addCartEvent(cartEvent, ar -> {
                 if (ar.succeeded()) {
                     rc.response().setStatusCode(201).end("Event added");
@@ -63,22 +78,23 @@ public class RestApiCartVerticle extends MicroServiceVerticle {
                 }
             });
         } else {
+            System.out.println("Nesto se ne poklapa");
             rc.fail(400);
         }
     }
-    
+
     private void getCart(RoutingContext rc, Long customerId) {
         cartService.getCart(customerId, RxHelper.<Cart>toFuture(
                 cart -> rc.response().end(Json.encode(cart)),
                 cause -> rc.response().setStatusCode(400).end(cause.getMessage())));
     }
-    
+
     private void checkout(RoutingContext rc, Long customerId) {
         cartService.checkout(customerId, RxHelper.<Checkout>toFuture(
                 checkout -> rc.response().end(checkout.toJson().encode()),
                 cause -> rc.response().setStatusCode(400).end(cause.getMessage())));
     }
-    
+
     protected void requireLogin(RoutingContext context, BiConsumer<RoutingContext, Long> biHandler) {
         Optional<JsonObject> principal = Optional.ofNullable(context.request().getHeader("user-principal"))
                 .map(JsonObject::new);
@@ -90,8 +106,9 @@ public class RestApiCartVerticle extends MicroServiceVerticle {
                     .end(new JsonObject().put("message", "need_auth").encode());
         }
     }
-    
+
     private static final String API_CHECKOUT = "/checkout";
     private static final String API_ADD_CART_EVENT = "/events/add";
     private static final String API_GET_CART = "/cart";
+    private static final String API_GET_CART_TEST = "/cart-test";
 }

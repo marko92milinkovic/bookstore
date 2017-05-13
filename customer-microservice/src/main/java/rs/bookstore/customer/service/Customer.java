@@ -23,12 +23,13 @@ public class Customer {
 
     public Customer() {
     }
-    
+
     public Customer(JsonObject json) {
+        json.put("id", json.getLong("_id", json.getLong("id")));
         CustomerConverter.fromJson(json, this);
     }
-    
-    public JsonObject toJson () {
+
+    public JsonObject toJson() {
         JsonObject json = new JsonObject();
         CustomerConverter.toJson(this, json);
         return json;
@@ -78,6 +79,5 @@ public class Customer {
     public String toString() {
         return "Customer{" + "id=" + id + ", username=" + username + ", phone=" + phone + ", email=" + email + ", birthDate=" + birthDate + '}';
     }
-    
-    
+
 }

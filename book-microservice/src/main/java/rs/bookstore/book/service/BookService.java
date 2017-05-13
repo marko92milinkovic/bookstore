@@ -10,16 +10,17 @@ import io.vertx.codegen.annotations.ProxyGen;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
+import io.vertx.serviceproxy.ProxyHelper;
 import java.util.List;
 import rs.bookstore.book.domain.Book;
 
 /**
- * 
+ *
  * This is an event bus service so it is annotated with @ProxyGen
  *
  * @author marko
  */
-
 //Polyglot support
 @VertxGen
 //
@@ -33,7 +34,6 @@ public interface BookService {
 
     //These methods are asynchronous so they need to accept a Handler<AsyncResult<T>>
     //When the invocation is ready, the handler will be called
-    
     @Fluent
     BookService addBook(Book book, Handler<AsyncResult<Void>> resultHandler);
 

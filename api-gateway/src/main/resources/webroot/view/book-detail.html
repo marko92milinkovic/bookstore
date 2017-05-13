@@ -14,11 +14,24 @@
         <div class="box_top"></div>
         <div class="box_center">
             <div class="prod_title">Details</div>
-            <p class="details">{{book.shortDescription}}<div class="price"><strong>PRICE:</strong> <span class="red">{{book.price | currency}}</span></div>
+            <p class="details">{{book.shortDescription}}<div class="price"><strong>PRICE:</strong> <span class="red">{{book.price| currency}}</span></div>
             <div class="price"><strong>COLORS:</strong> 
                 <span class="colors"><img src="../images/color1.gif" alt="" title="" border="0" /></span>
                 <span class="colors"><img src="../images/color2.gif" alt="" title="" border="0" /></span>
                 <span class="colors"><img src="../images/color3.gif" alt="" title="" border="0" /></span>                    </div>
+            <form ng-submit="addToCart()" ng-controller="AddToCartCtrl" ng-if="inventory">
+                <div class="panel-heading form-inline">
+                    <div class="form-group">
+                        <label>Choose quantity: </label>
+                        <input type="number" ng-model="amount" placeholder="Amount" min="0"
+                               class="form-control">
+                    </div>
+                    <input type="hidden" ng-model="bookdId" value="{{book.bookId}}"/>
+                    <button class="btn btn-primary" id="addToCart" type="submit">Add to Cart
+                    </button>
+                </div>
+            </form>
+
             <a href="/#!/book-to-cart/{{book.bookId}}" class="more"><img src="../images/order_now.gif" alt="" title="" border="0" /></a>
             <div class="clear"></div>
         </div>

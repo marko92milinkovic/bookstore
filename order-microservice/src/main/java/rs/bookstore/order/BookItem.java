@@ -22,7 +22,8 @@ public class BookItem {
     
     public BookItem(Book book, int amount) {
         this.bookId = book.getBookId();
-        this.price = book.getPages();
+        this.price = book.getPrice();
+        this.amount = amount;
     }
 
     public BookItem(long bookId, double price, int amount) {
@@ -64,5 +65,9 @@ public class BookItem {
     public void setAmount(int amount) {
         this.amount = amount;
     }
-    
+
+    @Override
+    public String toString() {
+        return "BookItem{" + "bookId=" + bookId + ", price=" + price + ", amount=" + amount + '}';
+    }
 }
