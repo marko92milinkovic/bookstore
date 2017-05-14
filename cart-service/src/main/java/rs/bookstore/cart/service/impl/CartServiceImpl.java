@@ -24,22 +24,25 @@ import java.util.stream.Collectors;
 import rs.bookstore.book.domain.Book;
 import rs.bookstore.book.service.BookService;
 import rs.bookstore.cart.Cart;
-import rs.bookstore.cart.Checkout;
+import rs.bookstore.cart.CheckoutResult;
 import rs.bookstore.cart.event.CartEvent;
 import rs.bookstore.cart.repository.impl.CartEventDAOImpl;
 import rs.bookstore.cart.service.CartService;
 import rs.bookstore.constants.MicroServiceNamesConstants;
 import rs.bookstore.cart.repository.CartEventDAO;
 import rs.bookstore.order.BookItem;
+import rs.bookstore.order.Order;
 
 public class CartServiceImpl implements CartService {
 
     private final CartEventDAO repository;
     private final ServiceDiscovery discovery;
     private final CircuitBreaker circuitBreaker;
+    private final Vertx vertx;
 
     public CartServiceImpl(Vertx vertx, JsonObject config, ServiceDiscovery discovery) {
         this.discovery = discovery;
+        this.vertx = vertx;
         repository = new CartEventDAOImpl(vertx, config);
         // init circuit breaker instance
         JsonObject cbOptions = config.getJsonObject("circuit-breaker") != null
@@ -77,8 +80,34 @@ public class CartServiceImpl implements CartService {
     }
 
     @Override
-    public void checkout(Long customerId, Handler<AsyncResult<Checkout>> resultHandler) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public void checkout(Long customerId, Handler<AsyncResult<CheckoutResult>> resultHandler) {
+        if (customerId == null) {
+            resultHandler.handle(Future.failedFuture(new IllegalStateException("Invalid customer")));
+            return;
+        }
+        Future<Cart> cartFuture = getCurrentCart(customerId);
+        Future<CheckoutResult> orderFuture = cartFuture.compose(cart
+                -> checkAvailableInventory(cart).compose(checkResult -> {
+            if (checkResult.getBoolean("res")) {
+                double totalPrice = calculateTotalPrice(cart);
+                // create order instance
+                Order order = new Order();
+                order.setCustomerId(customerId);
+                order.setPaymentId(-99);
+                order.setTotalPrice(totalPrice);
+                order.setBookItems(cart.getBookItems());
+                // set id and then send order, wait for reply
+                return sendOrderAwaitResult(order)
+                        .compose(result -> saveCheckoutEvent(customerId).map(v -> result));
+            } else {
+                // has insufficient inventory, fail
+                return Future.succeededFuture(new CheckoutResult()
+                        .setResultMessage(checkResult.getString("message")));
+            }
+        })
+        );
+
+        orderFuture.setHandler(resultHandler);
     }
 
     private void retrieveBook() {
@@ -116,10 +145,10 @@ public class CartServiceImpl implements CartService {
                                 }));
                     }).setHandler(ar -> {
                         if (ar.failed()) {
-                            System.out.println("CIRCUIT - BREAKER JE PUKAO jer "+ar.cause().getMessage());
+                            System.out.println("CIRCUIT - BREAKER JE PUKAO jer " + ar.cause().getMessage());
                             future.fail(ar.cause());
                         } else {
-                            System.out.println("REZULTAT: "+ar.result());
+                            System.out.println("REZULTAT: " + ar.result());
                         }
                     });
                     return future;
@@ -194,4 +223,137 @@ public class CartServiceImpl implements CartService {
         return future;
     }
 
+    /**
+     * Send the order to the order microservice and wait for reply.
+     *
+     * @param order order data object
+     * @return async result
+     */
+    private Future<CheckoutResult> sendOrderAwaitResult(Order order) {
+        Future<CheckoutResult> future = Future.future();
+        vertx.eventBus().send(ORDER_EVENT_ADDRESS, order.toJson(), reply -> {
+            if (reply.succeeded()) {
+                future.complete(new CheckoutResult((JsonObject) reply.result().body()));
+            } else {
+                future.fail(reply.cause());
+            }
+        });
+        return future;
+    }
+
+    private Future<Cart> getCurrentCart(Long customerId) {
+        Future<CartService> future = Future.future();
+        EventBusService.getProxy(discovery, CartService.class, future.completer());
+        return future.compose(service -> {
+            Future<Cart> cartFuture = Future.future();
+            service.getCart(customerId, cartFuture.completer());
+            return cartFuture.compose(c -> {
+                if (c == null || c.getBookItems().isEmpty()) {
+                    return Future.failedFuture(new IllegalStateException("Invalid shopping cart"));
+                } else {
+                    return Future.succeededFuture(c);
+                }
+            });
+        });
+    }
+
+    private double calculateTotalPrice(Cart cart) {
+        return cart.getBookItems().stream()
+                .map(p -> p.getAmount() * p.getPrice()) // join by book id
+                .reduce(0.0d, (a, b) -> a + b);
+    }
+
+    private Future<HttpClient> getInventoryEndpoint() {
+        Future<HttpClient> future = Future.future();
+        HttpEndpoint.getClient(discovery,
+                new JsonObject().put("name", MicroServiceNamesConstants.INVENTORY_SERVICE),
+                future.completer());
+        return future;
+    }
+
+    private Future<JsonObject> getInventory(BookItem item, HttpClient client) {
+        Future<Integer> future = Future.future();
+        client.get("/inventory" + item.getBookId(), response -> {
+            if (response.statusCode() == 200) {
+                response.bodyHandler(buffer -> {
+                    try {
+                        int inventory = Integer.valueOf(buffer.toString());
+                        future.complete(inventory);
+                    } catch (NumberFormatException ex) {
+                        future.fail(ex);
+                    }
+                });
+            } else {
+                future.fail("not_found:" + item.getBookId());
+            }
+        })
+                .exceptionHandler(future::fail)
+                .end();
+        return future.map(inv -> new JsonObject()
+                .put("id", item.getBookId())
+                .put("inventory", inv)
+                .put("amount", item.getAmount()));
+    }
+
+    /**
+     * Check inventory for the current cart.
+     *
+     * @param cart shopping cart data object
+     * @return async result
+     */
+    private Future<JsonObject> checkAvailableInventory(Cart cart) {
+        Future<List<JsonObject>> allInventories = getInventoryEndpoint().compose(client -> {
+            List<Future<JsonObject>> futures = cart.getBookItems()
+                    .stream()
+                    .map(book -> getInventory(book, client))
+                    .collect(Collectors.toList());
+            return CompositeFutureImpl.all(futures.toArray(new Future[futures.size()]))
+                    .map(v -> futures.stream()
+                            .map(Future::result)
+                            .collect(Collectors.toList())
+                    )
+                    .map(r -> {
+                        ServiceDiscovery.releaseServiceObject(discovery, client);
+                        return r;
+                    });
+        });
+        return allInventories.map(inventories -> {
+            JsonObject result = new JsonObject();
+            // get the list of books whose inventory is lower than the demand amount
+            List<JsonObject> insufficient = inventories.stream()
+                    .filter(item -> item.getInteger("inventory") - item.getInteger("amount") < 0)
+                    .collect(Collectors.toList());
+            // insufficient inventory exists
+            if (insufficient.size() > 0) {
+                String insufficientList = insufficient.stream()
+                        .map(item -> item.getString("id"))
+                        .collect(Collectors.joining(", "));
+                result.put("message", String.format("Insufficient inventory available for book %s.", insufficientList))
+                        .put("res", false);
+            } else {
+                result.put("res", true);
+            }
+            return result;
+        });
+    }
+
+    /**
+     * Save checkout cart event for current customer.
+     *
+     * @param customerId customer id
+     * @return async result
+     */
+    private Future<Void> saveCheckoutEvent(Long customerId) {
+        Future<CartService> future = Future.future();
+        EventBusService.getProxy(discovery, CartService.class, future.completer());
+        return future.compose(service -> {
+            Future<Void> resFuture = Future.future();
+            CartEvent event = CartEvent.createCheckoutEvent(customerId);
+            service.addCartEvent(event, resFuture.completer());
+            return resFuture;
+        });
+    }
+
+    String PAYMENT_EVENT_ADDRESS = "events.service.shopping.to.payment";
+    String ORDER_EVENT_ADDRESS = "events.service.shopping.to.order";
 }

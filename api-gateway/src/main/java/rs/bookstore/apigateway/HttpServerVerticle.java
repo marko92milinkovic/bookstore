@@ -229,25 +229,27 @@ public class HttpServerVerticle extends MicroServiceVerticle {
                                             response.headers().forEach(header -> {
                                                 toRsp.putHeader(header.getKey(), header.getValue());
                                             });
-                                            
-                                            System.out.println("RESP is :"+body);
+
+                                            System.out.println("RESP is :" + body);
                                             toRsp.end(body);
                                             cbFuture.complete();
                                         }
                                     });
                                 });
                                 if (rc.user() != null) {
+                                    System.out.println("Dodajem user: " + rc.user());
                                     req.putHeader("user-principal", rc.user().principal().encode());
                                 }
                                 System.out.println("Call cart-microservice on url: " + req.uri());
 
                                 if (rc.getBody() != null) {
+                                    System.out.println("Dodajem body: "+rc.getBodyAsString());
                                     req.end(rc.getBody());
                                 } else {
                                     req.end();
                                 }
-                                req.end();
                             }, cause -> {
+                                cause.printStackTrace();
                                 rc.response().end("Http microservices not found");
                                 cbFuture.complete();
                             })

@@ -14,35 +14,41 @@ import rs.bookstore.order.Order;
  * @author marko
  */
 @DataObject(generateConverter = true)
-public class Checkout {
+public class CheckoutResult {
     
     private String resultMessage;
     private Order order;
     
-    public Checkout(JsonObject json) {
-        CheckoutConverter.fromJson(json, this);
+    public CheckoutResult(JsonObject json) {
+        CheckoutResultConverter.fromJson(json, this);
     }
     
     public JsonObject toJson() {
         JsonObject json = new JsonObject();
-        CheckoutConverter.toJson(this, json);
+        CheckoutResultConverter.toJson(this, json);
         return json;
     }
+
+    public CheckoutResult() {
+    }
+    
 
     public String getResultMessage() {
         return resultMessage;
     }
 
-    public void setResultMessage(String resultMessage) {
+    public CheckoutResult setResultMessage(String resultMessage) {
         this.resultMessage = resultMessage;
+        return this;
     }
 
     public Order getOrder() {
         return order;
     }
 
-    public void setOrder(Order order) {
+    public CheckoutResult setOrder(Order order) {
         this.order = order;
+        return this;
     }
     
 }

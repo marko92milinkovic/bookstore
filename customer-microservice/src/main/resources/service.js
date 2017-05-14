@@ -39,8 +39,10 @@ CustomerService.registerService(
                                 Array.prototype.forEach.call(res, function (json) {
                                     console.log(JSON.stringify(json));
                                 });
+                                console.log(utils.convParamJsonObject(res[0]));
                                 handler(Future.succeededFuture(new Customer(utils.convParamJsonObject(res[0]))));
                             } else {
+                                console.log("MA dajdeeadiafsdafijadwf[dsof");
                                 res_err.printStackTrace();
                                 handler(Future.failedFuture(res_err));
                             }

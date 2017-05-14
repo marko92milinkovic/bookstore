@@ -7,44 +7,59 @@
             <td>Item pic</td>
             <td>Book name</td>
             <td>Unit price</td>
-            <td>Qty</td>
-            <td>Total</td>               
+            <td>Quantity</td>
+            <td>Total</td>
+            <td>Remove</td>
         </tr>
-        
-        <tr>
-            <td><a href="details.html"><img src="../images/cart_thumb.gif" alt="" title="" border="0" class="cart_thumb" /></a></td>
-            <td>Books</td>
-            <td>100$</td>
-            <td>1</td>
-            <td>100$</td>               
-        </tr>          
-        <tr>
-            <td><a href="details.html"><img src="../images/cart_thumb.gif" alt="" title="" border="0" class="cart_thumb" /></a></td>
-            <td>Books</td>
-            <td>100$</td>
-            <td>1</td>
-            <td>100$</td>               
-        </tr>                  
-        <tr>
-            <td><a href="details.html"><img src="../images/cart_thumb.gif" alt="" title="" border="0" class="cart_thumb" /></a></td>
-            <td>Books</td>
-            <td>100$</td>
-            <td>1</td>
-            <td>100$</td>               
-        </tr>
+        <tbody>
+            <tr ng-repeat="item in cart.bookItems">
+                <td><a href="/#!/books/{{item.bookId}}"><img src="../images/cart_thumb.gif" alt="" title="" border="0" class="cart_thumb" /></a></td>
+                <td>{{item.title}}</td>
+                <td>{{item.price| currency}}</td>
+                <td>{{item.amount}}</td>
+                <td>{{item.amount * item.price| currency}}</td>
+                <td><form ng-submit="removeItem(rem_amount, item.bookId)" >
+                        <input type="text" name="rem_amount" class="contact_input" width="10%" ng-model="rem_amount" />
+                        <button class="btn btn-primary"  type="submit">
+                            Remove
+                        </button>
+                    </form></td>
+            </tr>
+            <!--        
+                    <tr>
+                        <td><a href="details.html"><img src="../images/cart_thumb.gif" alt="" title="" border="0" class="cart_thumb" /></a></td>
+                        <td>Books</td>
+                        <td>100$</td>
+                        <td>1</td>
+                        <td>100$</td>               
+                    </tr>          
+                    <tr>
+                        <td><a href="details.html"><img src="../images/cart_thumb.gif" alt="" title="" border="0" class="cart_thumb" /></a></td>
+                        <td>Books</td>
+                        <td>100$</td>
+                        <td>1</td>
+                        <td>100$</td>               
+                    </tr>                  
+                    <tr>
+                        <td><a href="details.html"><img src="../images/cart_thumb.gif" alt="" title="" border="0" class="cart_thumb" /></a></td>
+                        <td>Books</td>
+                        <td>100$</td>
+                        <td>1</td>
+                        <td>100$</td>               
+                    </tr>-->
 
-        <tr>
-            <td colspan="4" class="cart_total"><span class="red">TOTAL SHIPPING:</span></td>
-            <td> 250$</td>                
-        </tr>  
+            <tr>
+                <td colspan="4" class="cart_total"><span class="red">TOTAL SHIPPING:</span></td>
+                <td>{{shipping| currency}}</td>                
+            </tr>  
 
-        <tr>
-            <td colspan="4" class="cart_total"><span class="red">TOTAL:</span></td>
-            <td> 325$</td>                
-        </tr>                  
+            <tr>
+                <td colspan="4" class="cart_total"><span class="red">TOTAL:</span></td>
+                <td> {{shipping + total| currency}} </td>                
+            </tr>                  
 
     </table>
-    <a href="#" class="continue">&lt; continue</a>
+    <a href="/#!/books" class="continue">&lt; continue</a>
     <a href="#" class="checkout">checkout &gt;</a>
 
 </div>	

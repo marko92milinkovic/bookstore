@@ -17,17 +17,20 @@ import rs.bookstore.book.domain.Book;
 public class BookItem {
     
     private long bookId;
+    private String title;
     private double price;
     private int amount;
     
     public BookItem(Book book, int amount) {
         this.bookId = book.getBookId();
         this.price = book.getPrice();
+        this.title = book.getTitle();
         this.amount = amount;
     }
 
-    public BookItem(long bookId, double price, int amount) {
+    public BookItem(long bookId, double price, int amount, String title) {
         this.bookId = bookId;
+        this.title = title;
         this.price = price;
         this.amount = amount;
     }
@@ -66,8 +69,17 @@ public class BookItem {
         this.amount = amount;
     }
 
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
     @Override
     public String toString() {
-        return "BookItem{" + "bookId=" + bookId + ", price=" + price + ", amount=" + amount + '}';
+        return "BookItem{" + "bookId=" + bookId + ", title=" + title + ", price=" + price + ", amount=" + amount + '}';
     }
+
 }

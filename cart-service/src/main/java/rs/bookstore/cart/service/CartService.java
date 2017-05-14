@@ -10,7 +10,7 @@ import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import rs.bookstore.cart.Cart;
-import rs.bookstore.cart.Checkout;
+import rs.bookstore.cart.CheckoutResult;
 import rs.bookstore.cart.event.CartEvent;
 
 /**
@@ -23,6 +23,6 @@ public interface CartService {
 
     void addCartEvent(CartEvent event, Handler<AsyncResult<Void>> resultHandler);
     void getCart(Long customerId, Handler<AsyncResult<Cart>> resultHandler);
-    void checkout(Long customerId, Handler<AsyncResult<Checkout>> resultHandler);
+    void checkout(Long customerId, Handler<AsyncResult<CheckoutResult>> resultHandler);
 
 }

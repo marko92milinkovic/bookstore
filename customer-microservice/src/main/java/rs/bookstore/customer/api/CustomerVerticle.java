@@ -35,6 +35,7 @@ public class CustomerVerticle extends MicroServiceVerticle {
         Router router = Router.router(vertx);
 
         router.get("/js").handler(rc -> {
+            System.out.println("Ovo ne reaguje.........?");
             String username = rc.request().getParam("user");
             if (username == null || username.trim().equals("")) {
                 rc.response().end("Not found");

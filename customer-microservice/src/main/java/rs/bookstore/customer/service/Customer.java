@@ -25,6 +25,7 @@ public class Customer {
     }
 
     public Customer(JsonObject json) {
+        System.out.println("Kreiram customera : "+json.encodePrettily());
         json.put("id", json.getLong("_id", json.getLong("id")));
         CustomerConverter.fromJson(json, this);
     }

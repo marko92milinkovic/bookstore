@@ -34,7 +34,6 @@ public class Cart {
     }
 
     public Cart(JsonObject json) {
-        this.amountMap = new HashMap<>();
         CartConverter.fromJson(json, this);
     }
 

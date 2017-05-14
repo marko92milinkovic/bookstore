@@ -26,7 +26,7 @@ public class CartEvent {
     }
 
     public CartEvent(JsonObject json) {
-        json.put("cartEventType", json.getString("type"));
+        json.put("cartEventType", json.getString("type", json.getString("cartEventType")));
         CartEventConverter.fromJson(json, this);
     }
 

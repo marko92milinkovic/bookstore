@@ -17,6 +17,9 @@ app.config(['$routeProvider', function ($routeProvider) {
         $routeProvider.when('/', {
             templateUrl: 'view/home.html',
             controller: 'HomeCtrl'
+        }).when('/books', {
+            templateUrl: 'view/books.html',
+            controller: 'HomeCtrl'
         }).when('/p/private', {
             templateUrl: '../../private/private_page.html',
             controller: 'PrivateCtrl'
