@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 import rs.bookstore.book.domain.Book;
 import rs.bookstore.book.service.BookService;
 import rs.bookstore.cart.Cart;
-import rs.bookstore.cart.CheckoutResult;
+import rs.bookstore.order.CheckoutResult;
 import rs.bookstore.cart.event.CartEvent;
 import rs.bookstore.cart.repository.impl.CartEventDAOImpl;
 import rs.bookstore.cart.service.CartService;
@@ -81,6 +81,7 @@ public class CartServiceImpl implements CartService {
 
     @Override
     public void checkout(Long customerId, Handler<AsyncResult<CheckoutResult>> resultHandler) {
+        System.out.println("Start checkout");
         if (customerId == null) {
             resultHandler.handle(Future.failedFuture(new IllegalStateException("Invalid customer")));
             return;
@@ -242,18 +243,14 @@ public class CartServiceImpl implements CartService {
     }
 
     private Future<Cart> getCurrentCart(Long customerId) {
-        Future<CartService> future = Future.future();
-        EventBusService.getProxy(discovery, CartService.class, future.completer());
-        return future.compose(service -> {
-            Future<Cart> cartFuture = Future.future();
-            service.getCart(customerId, cartFuture.completer());
-            return cartFuture.compose(c -> {
-                if (c == null || c.getBookItems().isEmpty()) {
-                    return Future.failedFuture(new IllegalStateException("Invalid shopping cart"));
-                } else {
-                    return Future.succeededFuture(c);
-                }
-            });
+        Future<Cart> cartFuture = Future.future();
+        getCart(customerId, cartFuture.completer());
+        return cartFuture.compose(c -> {
+            if (c == null || c.getBookItems().isEmpty()) {
+                return Future.failedFuture(new IllegalStateException("Invalid shopping cart"));
+            } else {
+                return Future.succeededFuture(c);
+            }
         });
     }
 
@@ -273,7 +270,7 @@ public class CartServiceImpl implements CartService {
 
     private Future<JsonObject> getInventory(BookItem item, HttpClient client) {
         Future<Integer> future = Future.future();
-        client.get("/inventory" + item.getBookId(), response -> {
+        client.get("/inventory/" + item.getBookId(), response -> {
             if (response.statusCode() == 200) {
                 response.bodyHandler(buffer -> {
                     try {
@@ -325,12 +322,14 @@ public class CartServiceImpl implements CartService {
                     .collect(Collectors.toList());
             // insufficient inventory exists
             if (insufficient.size() > 0) {
+                System.out.println("insufficient inventory exists");
                 String insufficientList = insufficient.stream()
                         .map(item -> item.getString("id"))
                         .collect(Collectors.joining(", "));
                 result.put("message", String.format("Insufficient inventory available for book %s.", insufficientList))
                         .put("res", false);
             } else {
+                System.out.println("OK amount");
                 result.put("res", true);
             }
             return result;
@@ -344,14 +343,10 @@ public class CartServiceImpl implements CartService {
      * @return async result
      */
     private Future<Void> saveCheckoutEvent(Long customerId) {
-        Future<CartService> future = Future.future();
-        EventBusService.getProxy(discovery, CartService.class, future.completer());
-        return future.compose(service -> {
-            Future<Void> resFuture = Future.future();
-            CartEvent event = CartEvent.createCheckoutEvent(customerId);
-            service.addCartEvent(event, resFuture.completer());
-            return resFuture;
-        });
+        Future<Void> resFuture = Future.future();
+        CartEvent event = CartEvent.createCheckoutEvent(customerId);
+        addCartEvent(event, resFuture.completer());
+        return resFuture;
     }
 
     String PAYMENT_EVENT_ADDRESS = "events.service.shopping.to.payment";

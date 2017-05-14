@@ -19,7 +19,7 @@ increaseConsumer.handler({ message ->
         def redis = RedisClient.create(vertx)
         redis.incrby(PREFIX+bookId, amount, { ar-> 
                 if(ar.succeeded()) {
-                    message.reply("increased: "+ar.result())
+                    message.reply(ar.result())
                 } else {
                     message.reply(ar.cause().getMessage())
                 }
@@ -38,7 +38,7 @@ decreaseConsumer.handler({ message ->
         def redis = RedisClient.create(vertx, vertx.getOrCreateContext().config())
         redis.decrby(PREFIX+bookId, amount, { ar-> 
                 if(ar.succeeded()) {
-                    message.reply("decreased: "+ar.result())
+                    message.reply(ar.result())
                 } else {
                     message.reply(ar.cause().getMessage())
                 }
@@ -57,7 +57,7 @@ balanceConsumer.handler({ message ->
         def redis = RedisClient.create(vertx, vertx.getOrCreateContext().config())
         redis.get(PREFIX+bookId, { ar-> 
                 if(ar.succeeded()) {
-                    message.reply("get: "+ar.result())
+                    message.reply(ar.result())
                 } else {
                     message.reply(ar.cause().getMessage())
                 }

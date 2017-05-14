@@ -19,7 +19,7 @@
                 <td>{{item.amount}}</td>
                 <td>{{item.amount * item.price| currency}}</td>
                 <td><form ng-submit="removeItem(rem_amount, item.bookId)" >
-                        <input type="text" name="rem_amount" class="contact_input" width="10%" ng-model="rem_amount" />
+                        <input type="text" name="rem_amount" class="contact_input" width="20px" ng-model="rem_amount" />
                         <button class="btn btn-primary"  type="submit">
                             Remove
                         </button>
@@ -60,7 +60,7 @@
 
     </table>
     <a href="/#!/books" class="continue">&lt; continue</a>
-    <a href="#" class="checkout">checkout &gt;</a>
+    <a href ng-click= "checkout()" class="checkout">checkout &gt;</a>
 
 </div>	
 <div class="clear"></div>

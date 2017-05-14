@@ -13,6 +13,8 @@ import io.vertx.rxjava.ext.web.Router;
 import io.vertx.serviceproxy.ProxyHelper;
 import rs.bookstore.constants.PortsConstants;
 import rs.bookstore.lib.RxMicroServiceVerticle;
+import rs.bookstore.order.CheckoutResult;
+import rs.bookstore.order.Order;
 import rs.bookstore.order.impl.OrderServiceImpl;
 import rs.bookstore.order.service.OrderService;
 import static rs.bookstore.order.service.OrderService.SERVICE_ADDRESS;
@@ -34,8 +36,8 @@ public class OrderApiVerticle extends RxMicroServiceVerticle {
         this.orderService = new OrderServiceImpl(vertx, config());
         ProxyHelper.registerService(OrderService.class, vertx.getDelegate(), orderService, SERVICE_ADDRESS);
         publishEventBusService(SERVICE_NAME, SERVICE_ADDRESS, OrderService.class)
-                .concatWith(prepareDispatcher())
-                .subscribe(startFuture::complete, startFuture::fail, () -> System.out.println("Order and dispatch verticles prepared"));
+//                .concatWith(prepareDispatcher())
+                .subscribe(startFuture::complete, startFuture::fail);
 
         int port = config().getInteger("http.port", PortsConstants.ORDERS_SERVICE_PORT);
         String host = config().getString("host", "localhost");
@@ -55,13 +57,21 @@ public class OrderApiVerticle extends RxMicroServiceVerticle {
                 .requestHandler(router::accept)
                 .rxListen(port, host)
                 .subscribe(server -> System.out.println("Order server deployed"), System.err::println);
+        
+        vertx.eventBus().consumer(ORDER_EVENT_ADDRESS, message->{
+            System.out.println("Stigla korpa sa zadate adrese: "+message.body());
+            message.reply(new CheckoutResult().setOrder(new Order()).setResultMessage("cart checkouted").toJson());
+        });
 
     }
+    
+        String ORDER_EVENT_ADDRESS = "events.service.shopping.to.order";
 
-    private Single<Void> prepareDispatcher() {
-        return vertx.rxDeployVerticle("OrderDispatcher",
-                new DeploymentOptions().setConfig(config()))
-                .map(stringRes -> (Void) null);
-    }
+
+//    private Single<Void> prepareDispatcher() {
+//        return vertx.rxDeployVerticle("OrderDispatcher",
+//                new DeploymentOptions().setConfig(config()))
+//                .map(stringRes -> (Void) null);
+//    }
 
 }

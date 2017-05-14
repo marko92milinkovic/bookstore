@@ -32,7 +32,7 @@ app.controller('BookCtrl', function ($scope, $http, $routeParams) {
         $scope.book = response.data;
     });
 });
-app.controller('CartCtrl', function ($scope, $http, $rootScope) {
+app.controller('CartCtrl', function ($scope, $http, $rootScope, $location) {
 
     $scope.cart = {};
     $scope.shipping = 25;
@@ -42,6 +42,7 @@ app.controller('CartCtrl', function ($scope, $http, $rootScope) {
             console.log("cart is ");
             console.log(response);
             $scope.cart = response.data;
+            $scope.total = 0;
             console.log($scope.cart.bookItems);
             for (var i = 0; i < $scope.cart.bookItems.length; i++) {
                 var item = $scope.cart.bookItems[i];
@@ -66,6 +67,20 @@ app.controller('CartCtrl', function ($scope, $http, $rootScope) {
             getCart();
         }, function (error) {});
     };
+
+    $scope.checkout = function () {
+        console.log("sending checkout request");
+        $http.get("/api/cartservice/checkout").then(function (response) {
+            console.log(response);
+            $location.path("/orders");
+            getCart();
+        }, function (error) {
+            console.log("checkour error: ");
+            console.log(error);
+        });
+    };
+
+
 });
 app.controller('OrdersCtrl', function () {
 

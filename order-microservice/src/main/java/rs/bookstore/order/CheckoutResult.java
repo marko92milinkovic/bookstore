@@ -3,11 +3,10 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package rs.bookstore.cart;
+package rs.bookstore.order;
 
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
-import rs.bookstore.order.Order;
 
 /**
  *

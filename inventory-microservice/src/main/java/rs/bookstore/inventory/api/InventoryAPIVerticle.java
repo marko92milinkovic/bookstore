@@ -47,6 +47,7 @@ public class InventoryAPIVerticle extends MicroServiceVerticle {
     }
 
     private void retrieveInventory(RoutingContext rc) {
+        System.out.println("Retrieve inventory");
         long bookId;
         try {
             bookId = Long.parseLong(rc.pathParam("bookId"));
@@ -54,6 +55,7 @@ public class InventoryAPIVerticle extends MicroServiceVerticle {
             rc.response().setStatusCode(400).end("Invalid bookId");
             return;
         }
+        System.out.println("for book: " + bookId);
         vertx.eventBus().send("inventory.storage.balance",
                 new JsonObject().put("bookId", bookId),
                 ar -> {
@@ -66,6 +68,7 @@ public class InventoryAPIVerticle extends MicroServiceVerticle {
     }
 
     private void decrease(RoutingContext rc) {
+        System.out.println("Decrease inventory");
         long bookId;
         int amount;
         try {
@@ -75,6 +78,9 @@ public class InventoryAPIVerticle extends MicroServiceVerticle {
             rc.response().setStatusCode(400).end("Invalid params");
             return;
         }
+
+        System.out.println("for book: " + bookId);
+
         vertx.eventBus().send("inventory.storage.decrease",
                 new JsonObject().put("bookId", bookId).put("amount", amount),
                 ar -> {
@@ -87,6 +93,7 @@ public class InventoryAPIVerticle extends MicroServiceVerticle {
     }
 
     private void increase(RoutingContext rc) {
+        System.out.println("Increase inventory");
         long bookId;
         int amount;
         try {
@@ -96,6 +103,7 @@ public class InventoryAPIVerticle extends MicroServiceVerticle {
             rc.response().setStatusCode(400).end("Invalid params");
             return;
         }
+        System.out.println("for book: " + bookId);
 
         vertx.eventBus().send("inventory.storage.increase",
                 new JsonObject().put("bookId", bookId).put("amount", amount),

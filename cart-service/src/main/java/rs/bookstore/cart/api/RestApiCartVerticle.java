@@ -19,7 +19,7 @@ import io.vertx.rxjava.core.Vertx;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import rs.bookstore.cart.Cart;
-import rs.bookstore.cart.CheckoutResult;
+import rs.bookstore.order.CheckoutResult;
 import rs.bookstore.cart.event.CartEvent;
 import rs.bookstore.cart.service.CartService;
 import rs.bookstore.cart.service.impl.CartServiceImpl;
@@ -44,7 +44,7 @@ public class RestApiCartVerticle extends MicroServiceVerticle {
         
         router.post(API_ADD_CART_EVENT).handler(rc -> requireLogin(rc, this::addCartEvent));
         router.get(API_GET_CART).handler(rc -> requireLogin(rc, this::getCart));
-        router.post(API_CHECKOUT).handler(rc -> requireLogin(rc, this::checkout));
+        router.get(API_CHECKOUT).handler(rc -> requireLogin(rc, this::checkout));
         router.get(API_GET_CART_TEST).handler(rc -> getCart(rc, 1l));
 
         //enable local session

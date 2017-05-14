@@ -10,7 +10,7 @@ import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import rs.bookstore.cart.Cart;
-import rs.bookstore.cart.CheckoutResult;
+import rs.bookstore.order.CheckoutResult;
 import rs.bookstore.cart.event.CartEvent;
 
 /**
