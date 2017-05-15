@@ -5,10 +5,10 @@
  */
 package rs.bookstore.order.api;
 
-import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
 import io.vertx.core.json.Json;
 import io.vertx.rx.java.RxHelper;
+import io.vertx.rxjava.core.http.HttpServer;
 import io.vertx.rxjava.ext.web.Router;
 import io.vertx.serviceproxy.ProxyHelper;
 import rs.bookstore.constants.PortsConstants;
@@ -35,9 +35,6 @@ public class OrderApiVerticle extends RxMicroServiceVerticle {
 
         this.orderService = new OrderServiceImpl(vertx, config());
         ProxyHelper.registerService(OrderService.class, vertx.getDelegate(), orderService, SERVICE_ADDRESS);
-        publishEventBusService(SERVICE_NAME, SERVICE_ADDRESS, OrderService.class)
-//                .concatWith(prepareDispatcher())
-                .subscribe(startFuture::complete, startFuture::fail);
 
         int port = config().getInteger("http.port", PortsConstants.ORDERS_SERVICE_PORT);
         String host = config().getString("host", "localhost");
@@ -53,25 +50,26 @@ public class OrderApiVerticle extends RxMicroServiceVerticle {
                                     cause -> rc.response().end(cause.getMessage())));
                 });
 
-        vertx.createHttpServer()
+        Single<HttpServer> server = vertx.createHttpServer()
                 .requestHandler(router::accept)
-                .rxListen(port, host)
-                .subscribe(server -> System.out.println("Order server deployed"), System.err::println);
+                .rxListen(port, host);
         
-        vertx.eventBus().consumer(ORDER_EVENT_ADDRESS, message->{
-            System.out.println("Stigla korpa sa zadate adrese: "+message.body());
+        Single<Void> publishEventBusService = publishEventBusService(SERVICE_NAME, SERVICE_ADDRESS, OrderService.class);
+
+        vertx.eventBus().consumer(ORDER_EVENT_ADDRESS, message -> {
+            System.out.println("Stigla narudzbina sa zadate adrese: " + message.body());
             message.reply(new CheckoutResult().setOrder(new Order()).setResultMessage("cart checkouted").toJson());
         });
-
+                
+        Single.concat(server, publishEventBusService)
+                .subscribe(next->{}, startFuture::fail, startFuture::complete);
     }
     
-        String ORDER_EVENT_ADDRESS = "events.service.shopping.to.order";
-
+    String ORDER_EVENT_ADDRESS = "events.service.shopping.to.order";
 
 //    private Single<Void> prepareDispatcher() {
 //        return vertx.rxDeployVerticle("OrderDispatcher",
 //                new DeploymentOptions().setConfig(config()))
 //                .map(stringRes -> (Void) null);
 //    }
-
 }
