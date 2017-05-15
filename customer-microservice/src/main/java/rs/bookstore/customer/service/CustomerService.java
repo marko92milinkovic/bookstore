@@ -20,10 +20,6 @@ import io.vertx.serviceproxy.ProxyHelper;
 @ProxyGen
 public interface CustomerService {
 
-      /**
-   * The name of the event bus service.
-   */
-  String SERVICE_NAME = "changeme";
 
   /**
    * The address on which the service is published.

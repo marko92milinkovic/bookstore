@@ -32,25 +32,11 @@ public abstract class MicroServiceVerticle extends AbstractVerticle {
     protected ServiceDiscovery discovery;
     //Records need to unpublish when the verticle is undeployed
     protected Set<Record> registeredRecords = new ConcurrentHashSet<>();
-    protected CircuitBreaker circuitBreaker;
 
     //initialization for the discovery and circuitBreaker
     @Override
     public void start() {
-
         discovery = ServiceDiscovery.create(vertx, new ServiceDiscoveryOptions().setBackendConfiguration(config()));
-
-        JsonObject cbConfig = config()
-                .getJsonObject("circuit_breaker") != null
-                ? config().getJsonObject("circuit-breaker") : new JsonObject();
-        circuitBreaker = CircuitBreaker.create(
-                cbConfig.getString("name", "cb"),
-                vertx,
-                new CircuitBreakerOptions()
-                .setMaxFailures(cbConfig.getInteger("max_failures", 3))
-                .setFallbackOnFailure(true)
-                .setTimeout(cbConfig.getLong("timeout", 5000l))
-                .setResetTimeout(cbConfig.getLong("reset_timeout", 20000l)));
     }
 
     //Several helper methods to publish various kind of services

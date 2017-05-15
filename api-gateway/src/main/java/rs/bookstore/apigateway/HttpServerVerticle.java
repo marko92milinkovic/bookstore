@@ -5,6 +5,8 @@
  */
 package rs.bookstore.apigateway;
 
+import io.vertx.circuitbreaker.CircuitBreaker;
+import io.vertx.circuitbreaker.CircuitBreakerOptions;
 import io.vertx.circuitbreaker.HystrixMetricHandler;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -33,7 +35,11 @@ import io.vertx.ext.web.handler.sockjs.SockJSHandler;
 import io.vertx.ext.web.sstore.LocalSessionStore;
 import io.vertx.rx.java.RxHelper;
 import io.vertx.rxjava.core.Vertx;
+import io.vertx.rxjava.core.buffer.Buffer;
 import io.vertx.rxjava.core.http.HttpClientResponse;
+import io.vertx.rxjava.ext.web.client.HttpRequest;
+import io.vertx.rxjava.ext.web.client.HttpResponse;
+import io.vertx.rxjava.ext.web.client.WebClient;
 import io.vertx.servicediscovery.Record;
 import io.vertx.servicediscovery.types.EventBusService;
 import io.vertx.servicediscovery.types.HttpEndpoint;
@@ -41,10 +47,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalDouble;
 import rs.bookstore.constants.MicroServiceNamesConstants;
+import static rs.bookstore.constants.MicroServiceNamesConstants.CUSTOMER_SERVICE_RPC;
 import rs.bookstore.customer.service.Customer;
 import rs.bookstore.customer.service.CustomerService;
 import rs.bookstore.lib.MicroServiceVerticle;
 import rx.Observable;
+import rx.Single;
 
 /**
  *
@@ -55,6 +63,9 @@ public class HttpServerVerticle extends MicroServiceVerticle {
     MongoAuth authProvider;
     //temporary storage
     List<JsonObject> reviews = new ArrayList<>();
+    private CircuitBreaker cb_api_book;
+    private CircuitBreaker cb_api_cart;
+    private CircuitBreaker cb_api_customer;
 
     @Override
     public void start(Future<Void> startFuture) throws Exception {
@@ -133,6 +144,35 @@ public class HttpServerVerticle extends MicroServiceVerticle {
                 startFuture.fail(ar.cause());
             }
         });
+        //init circuit breakers:
+        JsonObject cbConfig = config()
+                .getJsonObject("circuit_breaker") != null
+                ? config().getJsonObject("circuit-breaker") : new JsonObject();
+        cb_api_book = CircuitBreaker.create(
+                cbConfig.getString("name_cb_api_book", "cb: api-> book"),
+                vertx,
+                new CircuitBreakerOptions()
+                .setMaxFailures(cbConfig.getInteger("max_failures", 3))
+                .setFallbackOnFailure(true)
+                .setTimeout(cbConfig.getLong("timeout", 3000l))
+                .setResetTimeout(cbConfig.getLong("reset_timeout", 7000l)));
+        cb_api_cart = CircuitBreaker.create(
+                cbConfig.getString("name_cb_api_cart", "cb: api-> cart"),
+                vertx,
+                new CircuitBreakerOptions()
+                .setMaxFailures(cbConfig.getInteger("max_failures", 3))
+                .setFallbackOnFailure(true)
+                .setTimeout(cbConfig.getLong("timeout", 3000l))
+                .setResetTimeout(cbConfig.getLong("reset_timeout", 7000l)));
+        cb_api_customer = CircuitBreaker.create(
+                cbConfig.getString("name_cb_api_cart", "cb: api-> customer"),
+                vertx,
+                new CircuitBreakerOptions()
+                .setMaxFailures(cbConfig.getInteger("max_failures", 3))
+                .setFallbackOnFailure(true)
+                .setTimeout(cbConfig.getLong("timeout", 3000l))
+                .setResetTimeout(cbConfig.getLong("reset_timeout", 7000l)));
+
     }
 
     private void addToCart(RoutingContext rc) {
@@ -141,8 +181,7 @@ public class HttpServerVerticle extends MicroServiceVerticle {
     }
 
     private void dispatchBookRequests(RoutingContext rc) {
-
-        circuitBreaker.execute(cbFuture -> {
+        cb_api_book.executeWithFallback(cbFuture -> {
             discovery.getRecord(record
                     -> record.getType().equals(HttpEndpoint.TYPE)
                     && record.getName().equals(MicroServiceNamesConstants.BOOK_SERVICE_HTTP), ar -> {
@@ -150,34 +189,38 @@ public class HttpServerVerticle extends MicroServiceVerticle {
                 if (ar.succeeded() && ar.result() != null) {
 
                     Record bookMicroserviceRecord = ar.result();
-                    HttpClient httpClient
-                            = discovery.getReference(bookMicroserviceRecord).get();
-
-                    String path = rc.request().uri();
-
-                    String apiPAth = (path.split("/api/bookservice"))[1];
-
-                    HttpClientRequest req = httpClient.request(rc.request().method(), apiPAth, booksResponse -> {
-                        booksResponse.bodyHandler(body -> {
-                            if (booksResponse.statusCode() >= 500) {
-                                cbFuture.fail(booksResponse.statusCode() + ": " + body.toString());
-                            } else {
-                                HttpServerResponse toRsp = rc.response()
-                                        .setStatusCode(booksResponse.statusCode());
-                                booksResponse.headers().forEach(header -> {
-                                    toRsp.putHeader(header.getKey(), header.getValue());
-                                });
-                                toRsp.end(body);
-                                cbFuture.complete();
-                            }
-                        });
-                    });
-                    System.out.println("Call book-microservice on url: " + req.uri());
+                    WebClient webClient
+                            = discovery.getReference(bookMicroserviceRecord).getAs(WebClient.class);
+                    String apiPAth = (rc.request().uri().split("/api/bookservice"))[1];
+                    Single<HttpResponse<Buffer>> singleResponse;
+                    System.out.println("Body: " + rc.getBodyAsString());
                     if (rc.getBody() == null) {
-                        req.end();
+                        singleResponse = webClient.request(rc.request().method(), apiPAth)
+                                .rxSend();
                     } else {
-                        req.end(rc.getBody());
+                        singleResponse = webClient.request(rc.request().method(), apiPAth)
+                                .rxSendBuffer(new Buffer(rc.getBody()));
                     }
+                    singleResponse.subscribe(
+                            response -> {
+                                if (response.statusCode() >= 500) {
+                                    cbFuture.fail(response.statusCode() + ": " + response.toString());
+                                } else {
+                                    HttpServerResponse toRsp = rc.response()
+                                    .setStatusCode(response.statusCode());
+                                    response.headers().getDelegate().forEach(header -> {
+                                        toRsp.putHeader(header.getKey(), header.getValue());
+                                    });
+                                    System.out.println("Body: " + response.bodyAsString());
+                                    toRsp.end(response.bodyAsString());
+                                    cbFuture.complete();
+                                }
+                            }, cause -> {
+                                if (!rc.response().ended()) {
+                                    rc.response().end(cause.getMessage());
+                                }
+                                cbFuture.fail(cause);
+                            });
                 } else {
                     rc.response().end("Http microservices not found");
                     cbFuture.complete();
@@ -187,7 +230,7 @@ public class HttpServerVerticle extends MicroServiceVerticle {
                 }
             }
             );
-        }).setHandler(ar -> {
+        }, Throwable::getMessage).setHandler(ar -> {
             if (ar.failed()) {
                 ar.cause().printStackTrace();
                 rc.response()
@@ -209,7 +252,7 @@ public class HttpServerVerticle extends MicroServiceVerticle {
             return;
         }
 
-        circuitBreaker.execute(cbFuture -> {
+        cb_api_cart.executeWithFallback(cbFuture -> {
             discovery.getRecord(record
                     -> record.getType().equals(HttpEndpoint.TYPE)
                     && record.getName().equals(MicroServiceNamesConstants.CART_SERVICE_HTTP),
@@ -243,18 +286,20 @@ public class HttpServerVerticle extends MicroServiceVerticle {
                                 System.out.println("Call cart-microservice on url: " + req.uri());
 
                                 if (rc.getBody() != null) {
-                                    System.out.println("Dodajem body: "+rc.getBodyAsString());
+                                    System.out.println("Dodajem body: " + rc.getBodyAsString());
                                     req.end(rc.getBody());
                                 } else {
                                     req.end();
                                 }
                             }, cause -> {
                                 cause.printStackTrace();
-                                rc.response().end("Http microservices not found");
+                                if (!rc.response().ended()) {
+                                    rc.response().end("Http microservices not found");
+                                }
                                 cbFuture.complete();
                             })
             );
-        }).setHandler(ar -> {
+        }, Throwable::getMessage).setHandler(ar -> {
             if (ar.failed()) {
                 ar.cause().printStackTrace();
                 rc.response()
@@ -290,31 +335,48 @@ public class HttpServerVerticle extends MicroServiceVerticle {
             Future<CustomerService> futureCustomerService = Future.future();
             EventBusService.getServiceProxyWithJsonFilter(
                     discovery,
-                    new JsonObject().put("name", CustomerService.SERVICE_NAME),
+                    new JsonObject().put("name", CUSTOMER_SERVICE_RPC),
                     CustomerService.class,
                     futureCustomerService.completer());
-            futureCustomerService.compose(customerService -> {
-                Future<Customer> customerFuture = Future.future();
-                customerService.getCustomerByUsername(username, customerFuture.completer());
-                return customerFuture;
-            }).setHandler(ar -> {
-                if (ar.succeeded()) {
-                    Customer res = ar.result();
-                    System.out.println("sending customer...... " + res);
-                    if (res == null) {
-                        rc.response().end("NOT found....see line 137");
+            cb_api_customer.executeWithFallback(cbFuture -> {
+
+                futureCustomerService.compose(customerService -> {
+                    Future<Customer> customerFuture = Future.future();
+                    customerService.getCustomerByUsername(username, customerFuture.completer());
+                    return customerFuture;
+                }).setHandler(ar -> {
+                    if (ar.succeeded()) {
+                        Customer res = ar.result();
+                        System.out.println("sending customer...... " + res);
+                        if (res == null) {
+                            rc.response().end("NOT found....see line 137");
+                        } else {
+                            rc.response()
+                                    .putHeader("content-type", "application/json")
+                                    .end(res.toJson().encodePrettily());
+                        }
+                        cbFuture.complete();
                     } else {
-                        rc.response()
-                                .putHeader("content-type", "application/json")
-                                .end(res.toJson().encodePrettily());
+                        cbFuture.fail(ar.cause());
+                        if (!rc.response().ended()) {
+                            rc.response().end(ar.cause().getMessage());
+                        }
+                        ar.cause().printStackTrace();
                     }
-                } else {
-                    rc.response().end(ar.cause().getMessage());
+                });
+            }, Throwable::getMessage).setHandler(ar -> {
+                if (ar.failed()) {
                     ar.cause().printStackTrace();
+                    rc.response()
+                            .setStatusCode(502)
+                            .putHeader("content-type", "application/json")
+                            .end(new JsonObject().put("error", "bad_gateway")
+                                    //.put("message", ex.getMessage())
+                                    .encodePrettily());
                 }
             });
-        }
 
+        }
     }
 
     private void dispatchReviewRequest(RoutingContext rc) {

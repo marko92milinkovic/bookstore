@@ -8,6 +8,7 @@ package rs.bookstore.customer.api;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpServer;
 import io.vertx.ext.web.Router;
+import static rs.bookstore.constants.MicroServiceNamesConstants.CUSTOMER_SERVICE_RPC;
 import rs.bookstore.customer.service.CustomerService;
 import rs.bookstore.lib.MicroServiceVerticle;
 
@@ -54,7 +55,7 @@ public class CustomerVerticle extends MicroServiceVerticle {
             });
         });
 
-        publishEventBusService(CustomerService.SERVICE_NAME, CustomerService.SERVICE_ADDRESS, CustomerService.class, ar -> {
+        publishEventBusService(CUSTOMER_SERVICE_RPC, CustomerService.SERVICE_ADDRESS, CustomerService.class, ar -> {
             if (ar.failed()) {
                 ar.cause().printStackTrace();
             } else {

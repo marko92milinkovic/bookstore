@@ -85,7 +85,7 @@ app.controller('CartCtrl', function ($scope, $http, $rootScope, $location) {
 app.controller('OrdersCtrl', function () {
 
 });
-app.controller('AddToCartCtrl', function ($scope, $http, $rootScope) {
+app.controller('AddToCartCtrl', function ($scope, $http, $rootScope, $location) {
     $scope.bookId = "";
     $scope.addToCart = function () {
         console.log("in addtocart. root scope ");
@@ -97,6 +97,7 @@ app.controller('AddToCartCtrl', function ($scope, $http, $rootScope) {
             customerId: $rootScope.user !== undefined ? $rootScope.user.id : ""
         }).then(function (response) {
             console.log(response);
+            $location.path("/cart");
             //should increase number of items in cart
 //            $window.location.href = '/!#/cart';
         }, function (error) {});

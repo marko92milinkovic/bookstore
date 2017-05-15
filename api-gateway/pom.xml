@@ -33,6 +33,11 @@
             <groupId>io.vertx</groupId>
             <artifactId>vertx-auth-mongo</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-web-client</artifactId>
+            <type>jar</type>
+        </dependency>
     </dependencies>
     
     <build>

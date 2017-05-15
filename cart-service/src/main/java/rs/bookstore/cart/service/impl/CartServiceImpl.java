@@ -139,7 +139,9 @@ public class CartServiceImpl implements CartService {
                         service.getBook(bookId, RxHelper.toFuture(
                                 book -> {
                                     cbFuture.complete();
-                                    future.complete(book);
+                                    if (!future.isComplete()) {
+                                        future.complete(book);
+                                    }
                                 }, cause -> {
                                     System.out.println("Problem");
                                     cbFuture.fail(cause);
