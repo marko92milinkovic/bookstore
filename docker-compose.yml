@@ -1,0 +1,77 @@
+version: "2"
+services:
+  mysql:
+    image: mysql:latest
+    expose:
+      - "3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=master
+  mongo:
+    image: mongo:latest
+    expose:
+      - "27017"
+  redis:
+    image: redis:latest
+    expose:
+      - "6379"
+  inventory-microservice:
+    image: bookstore/inventory-microservice
+    links:
+      - redis
+    depends_on:
+      - redis
+    expose:
+      - "9003"
+  book-microservice:
+    image: bookstore/book-microservice
+    links:
+      - mongo
+    depends_on:
+      - mongo
+    expose:
+      - "9002"
+  customer-microservice:
+    image: bookstore/customer-microservice
+    links:
+      - mongo
+    depends_on:
+      - mongo
+    expose:
+      - "8600"
+
+  cart-service:
+    image: bookstore/cart-service
+    links:
+      - mysql
+      - inventory-microservice
+      - book-microservice
+    depends_on:
+      - mysql
+    expose:
+      - "9051"
+  order-microservice:
+    image: bookstore/order-microservice
+    links:
+      - mysql
+    depends_on:
+      - mysql
+      - cart-service
+      - inventory-microservice
+    expose:
+      - "9800"
+  api-gateway:
+    image: bookstore/api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - JAVA_OPTS="-Xms128m -Xmx256m"
+    links:
+      - inventory-microservice
+      - book-microservice
+      - cart-service
+      - order-microservice
+      - customer-microservice
+      - mongo
+    extra_hosts:
+      - "dockernet:${EXTERNAL_IP}"
