@@ -8,7 +8,7 @@ ENV VERTICLE_HOME /opt/verticles
 EXPOSE 8080
 
 COPY $VERTICLE_FILE $VERTICLE_HOME/
-COPY src/config/docker.json $VERTICLE_HOME/
+COPY src/config/docker.json $VERTICLE_HOME
 
 
 WORKDIR $VERTICLE_HOME

@@ -1,6 +1,6 @@
 {
     "db_name": "master",
     "host": "mongo",
-    "port": 27017,
-    "service.book.port":9002
+    "port": 27017
 }
+

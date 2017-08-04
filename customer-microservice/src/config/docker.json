@@ -1,0 +1,6 @@
+{
+  "db_name": "master",
+  "host": "mongo",
+  "port": 27017
+}
+

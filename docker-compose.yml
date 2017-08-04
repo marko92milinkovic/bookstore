@@ -29,8 +29,8 @@ services:
       - mongo
     depends_on:
       - mongo
-    expose:
-      - "9002"
+    ports:
+      - "9002:9002"
   customer-microservice:
     image: bookstore/customer-microservice
     links:

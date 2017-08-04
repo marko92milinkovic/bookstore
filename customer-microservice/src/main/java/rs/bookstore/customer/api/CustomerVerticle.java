@@ -23,7 +23,7 @@ public class CustomerVerticle extends MicroServiceVerticle {
         super.start();
         CustomerService service = CustomerService.createProxy(vertx);
 
-        vertx.deployVerticle("/home/marko/NetBeansProjects/bookstore/customer-microservice/src/main/resources/service.js", ar -> {
+        vertx.deployVerticle("service.js", ar -> {
             if (ar.succeeded()) {
                 System.out.println("postavio js verticle");
                 future.complete();

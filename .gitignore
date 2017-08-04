@@ -11,3 +11,11 @@
 */src/main/asciidoc/
 */.vertx/
 /api-gateway/src/main/resources/webroot/node_modules
+/dashboard/target/
+.idea/
+*/.settings
+*/.classpath
+*/.project
+*/*.iml
+.settings
+.project

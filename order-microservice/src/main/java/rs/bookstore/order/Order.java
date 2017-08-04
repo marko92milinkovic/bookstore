@@ -21,13 +21,15 @@ public class Order {
     private long paymentId;
     private List<BookItem> bookItems;
     private double totalPrice;
+    private long createTime;
 
-    public Order(long orderId, long customerId, long paymentId, List<BookItem> bookItems, double totalPrice) {
+    public Order(long orderId, long customerId, long paymentId, List<BookItem> bookItems, double totalPrice, long createTime) {
         this.orderId = orderId;
         this.customerId = customerId;
         this.paymentId = paymentId;
         this.bookItems = bookItems;
         this.totalPrice = totalPrice;
+        this.createTime = createTime;
     }
 
     public Order() {
@@ -87,6 +89,14 @@ public class Order {
     public Order setTotalPrice(double totalPrice) {
         this.totalPrice = totalPrice;
         return this;
+    }
+
+    public long getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(long createTime) {
+        this.createTime = createTime;
     }
 
 }

@@ -50,11 +50,12 @@ public class RestApiCartVerticle extends MicroServiceVerticle {
         //enable local session
         router.route().handler(CookieHandler.create());
         router.route().handler(SessionHandler.create(LocalSessionStore.create(vertx, "shopping.session")));
-        
+        System.out.println("\n\n\n\n\n");
+        System.out.println(config().encodePrettily());
         cartService = new CartServiceImpl(Vertx.newInstance(vertx), config(), discovery);
         
         int port = config().getInteger("http.port", PortsConstants.CART_SERVICE_HTTP_PORT);
-        String host = "localhost";
+        String host = "0.0.0.0";
         vertx.createHttpServer()
                 .requestHandler(router::accept)
                 .listen(port, host, RxHelper.toFuture(server

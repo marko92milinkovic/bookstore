@@ -25,6 +25,9 @@ public interface OrderService {
   String SERVICE_ADDRESS = "service.order";
 
   @Fluent
+  OrderService initializePersistence(Handler<AsyncResult<Void>> resultHandler);
+  
+  @Fluent
   OrderService retrieveOrdersForCustomer(Long customerId, Handler<AsyncResult<List<Order>>> resultHandler);
 
   @Fluent

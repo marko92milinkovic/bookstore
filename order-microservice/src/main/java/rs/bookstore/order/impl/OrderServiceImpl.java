@@ -15,7 +15,6 @@ import rs.bookstore.order.Order;
 import rs.bookstore.order.repository.OrderRxRepository;
 import rs.bookstore.order.repository.impl.OrderRxRepositoryImpl;
 import rs.bookstore.order.service.OrderService;
-import rx.Completable;
 
 public class OrderServiceImpl implements OrderService {
 
@@ -43,6 +42,11 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderService retrieveOrder(Long orderId, Handler<AsyncResult<Order>> resultHandler) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public OrderService initializePersistence(Handler<AsyncResult<Void>> resultHandler) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 

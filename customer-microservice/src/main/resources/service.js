@@ -7,7 +7,7 @@
 
 
 var Future = Java.type('io.vertx.core.Future');
-var CustomerService = require('../generated/customer-service-js/customer_service');
+var CustomerService = require('customer-service-js/customer_service');
 // force nashorn to convert to this type later on
 var JCustomerService = Java.type('rs.bookstore.customer.service.CustomerService');
 var Customer = Java.type('rs.bookstore.customer.service.Customer');
@@ -15,9 +15,9 @@ var Customer = Java.type('rs.bookstore.customer.service.Customer');
 var utils = require('vertx-js/util/utils');
 var MongoClient = require("vertx-mongo-js/mongo_client");
 
-//mongo configuration
+// mongo configuration
 var mongoconfig = {
-    "connection_string": "mongodb://localhost:27017",
+    "connection_string": "mongodb://mongo:27017",
     "db_name": "master"
 };
 var collection = "customer";

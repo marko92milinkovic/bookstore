@@ -34,12 +34,13 @@ import rs.bookstore.order.BookItem;
 import rs.bookstore.order.Order;
 
 public class CartServiceImpl implements CartService {
-
+    
     private final CartEventDAO repository;
     private final ServiceDiscovery discovery;
-    private final CircuitBreaker circuitBreaker;
+    private final CircuitBreaker cb_book;
+    private final CircuitBreaker cb_inventory;
     private final Vertx vertx;
-
+    
     public CartServiceImpl(Vertx vertx, JsonObject config, ServiceDiscovery discovery) {
         this.discovery = discovery;
         this.vertx = vertx;
@@ -47,21 +48,28 @@ public class CartServiceImpl implements CartService {
         // init circuit breaker instance
         JsonObject cbOptions = config.getJsonObject("circuit-breaker") != null
                 ? config.getJsonObject("circuit-breaker") : new JsonObject();
-        circuitBreaker = CircuitBreaker.create(cbOptions.getString("name", "cb: cart->book"), vertx,
+        cb_book = CircuitBreaker.create(cbOptions.getString("name", "cb: cart->book"), vertx,
                 new CircuitBreakerOptions()
-                .setMaxFailures(cbOptions.getInteger("max-failures", 3))
-                .setTimeout(cbOptions.getLong("timeout", 4000L))
-                .setFallbackOnFailure(true)
-                .setResetTimeout(cbOptions.getLong("reset-timeout", 10000L)));
+                        .setMaxFailures(cbOptions.getInteger("max-failures", 3))
+                        .setTimeout(cbOptions.getLong("timeout", 4000L))
+                        .setFallbackOnFailure(true)
+                        .setResetTimeout(cbOptions.getLong("reset-timeout", 10000L)));
+        
+        cb_inventory = CircuitBreaker.create(cbOptions.getString("name", "cb: cart->book"), vertx,
+                new CircuitBreakerOptions()
+                        .setMaxFailures(cbOptions.getInteger("max-failures", 3))
+                        .setTimeout(cbOptions.getLong("timeout", 4000L))
+                        .setFallbackOnFailure(true)
+                        .setResetTimeout(cbOptions.getLong("reset-timeout", 10000L)));
     }
-
+    
     @Override
     public void addCartEvent(CartEvent event, Handler<AsyncResult<Void>> resultHandler) {
         Future<Void> future = Future.future();
         repository.addOne(event).subscribe(future::complete, future::fail);
         future.setHandler(resultHandler);
     }
-
+    
     @Override
     public void getCart(Long customerId, Handler<AsyncResult<Cart>> resultHandler) {
         Future<Cart> future = Future.future();
@@ -71,14 +79,14 @@ public class CartServiceImpl implements CartService {
                 .reduce(new Cart(), Cart::incorporate)
                 .toSingle()
                 .subscribe(future::complete, future::fail);
-
+        
         future.compose(cart
                 -> getBookService()
-                .compose(service -> prepareBook(service, cart)) // prepare book data
-                .compose(bookList -> generateCurrentCartFromStream(cart, bookList)) // prepare book items
+                        .compose(service -> prepareBook(service, cart)) // prepare book data
+                        .compose(bookList -> generateCurrentCartFromStream(cart, bookList)) // prepare book items
         ).setHandler(resultHandler);
     }
-
+    
     @Override
     public void checkout(Long customerId, Handler<AsyncResult<CheckoutResult>> resultHandler) {
         System.out.println("Start checkout");
@@ -89,28 +97,28 @@ public class CartServiceImpl implements CartService {
         Future<Cart> cartFuture = getCurrentCart(customerId);
         Future<CheckoutResult> orderFuture = cartFuture.compose(cart
                 -> checkAvailableInventory(cart).compose(checkResult -> {
-            if (checkResult.getBoolean("res")) {
-                double totalPrice = calculateTotalPrice(cart);
-                // create order instance
-                Order order = new Order();
-                order.setCustomerId(customerId);
-                order.setPaymentId(-99);
-                order.setTotalPrice(totalPrice);
-                order.setBookItems(cart.getBookItems());
-                // set id and then send order, wait for reply
-                return sendOrderAwaitResult(order)
-                        .compose(result -> saveCheckoutEvent(customerId).map(v -> result));
-            } else {
-                // has insufficient inventory, fail
-                return Future.succeededFuture(new CheckoutResult()
-                        .setResultMessage(checkResult.getString("message")));
-            }
-        })
+                    if (checkResult.getBoolean("res")) {
+                        double totalPrice = calculateTotalPrice(cart);
+                        // create order instance
+                        Order order = new Order();
+                        order.setCustomerId(customerId);
+                        order.setPaymentId(-99);
+                        order.setTotalPrice(totalPrice);
+                        order.setBookItems(cart.getBookItems());
+                        // set id and then send order, wait for reply
+                        return sendOrderAwaitResult(order)
+                                .compose(result -> saveCheckoutEvent(customerId).map(v -> result));
+                    } else {
+                        // has insufficient inventory, fail
+                        return Future.succeededFuture(new CheckoutResult()
+                                .setResultMessage(checkResult.getString("message")));
+                    }
+                })
         );
-
+        
         orderFuture.setHandler(resultHandler);
     }
-
+    
     private void retrieveBook() {
         discovery.getRecord(record
                 -> record.getType().equals(HttpEndpoint.TYPE)
@@ -134,7 +142,7 @@ public class CartServiceImpl implements CartService {
                 .stream()
                 .map(bookId -> {
                     Future<Book> future = Future.future();
-                    circuitBreaker.execute(cbFuture -> {
+                    cb_book.execute(cbFuture -> {
                         System.out.println("Saljem zahtev");
                         service.getBook(bookId, RxHelper.toFuture(
                                 book -> {
@@ -176,8 +184,8 @@ public class CartServiceImpl implements CartService {
          */
         return CompositeFutureImpl.all(futures.toArray(new Future[futures.size()]))
                 .map(v -> futures.stream()
-                        .map(Future::result)
-                        .collect(Collectors.toList())
+                .map(Future::result)
+                .collect(Collectors.toList())
                 );
     }
 
@@ -201,13 +209,13 @@ public class CartServiceImpl implements CartService {
         List<BookItem> currentItems = rawCart.getAmountMap().entrySet()
                 .stream()
                 .map(item -> new BookItem(getBookFromStream(bookList, item.getKey()),
-                        item.getValue()))
+                item.getValue()))
                 .filter(item -> item.getAmount() > 0)
                 .collect(Collectors.toList());
         rawCart.setBookItems(currentItems);
         return Future.succeededFuture(rawCart);
     }
-
+    
     private Book getBookFromStream(List<Book> bookList, Long bookId) {
         return bookList.stream()
                 .filter(book -> book.getBookId() == bookId)
@@ -243,7 +251,7 @@ public class CartServiceImpl implements CartService {
         });
         return future;
     }
-
+    
     private Future<Cart> getCurrentCart(Long customerId) {
         Future<Cart> cartFuture = Future.future();
         getCart(customerId, cartFuture.completer());
@@ -255,13 +263,13 @@ public class CartServiceImpl implements CartService {
             }
         });
     }
-
+    
     private double calculateTotalPrice(Cart cart) {
         return cart.getBookItems().stream()
                 .map(p -> p.getAmount() * p.getPrice()) // join by book id
                 .reduce(0.0d, (a, b) -> a + b);
     }
-
+    
     private Future<HttpClient> getInventoryEndpoint() {
         Future<HttpClient> future = Future.future();
         HttpEndpoint.getClient(discovery,
@@ -269,25 +277,32 @@ public class CartServiceImpl implements CartService {
                 future.completer());
         return future;
     }
-
+    
     private Future<JsonObject> getInventory(BookItem item, HttpClient client) {
         Future<Integer> future = Future.future();
-        client.get("/inventory/" + item.getBookId(), response -> {
-            if (response.statusCode() == 200) {
-                response.bodyHandler(buffer -> {
-                    try {
-                        int inventory = Integer.valueOf(buffer.toString());
-                        future.complete(inventory);
-                    } catch (NumberFormatException ex) {
-                        future.fail(ex);
-                    }
-                });
-            } else {
-                future.fail("not_found:" + item.getBookId());
+        cb_inventory.executeWithFallback(cbFuture -> {
+            client.get("/inventory/" + item.getBookId(), response -> {
+                if (response.statusCode() == 200) {
+                    response.bodyHandler(buffer -> {
+                        try {
+                            int inventory = Integer.valueOf(buffer.toString());
+                            future.complete(inventory);
+                        } catch (NumberFormatException ex) {
+                            future.fail(ex);
+                        }
+                    });
+                } else {
+                    future.fail("not_found:" + item.getBookId());
+                }
+            })
+                    .exceptionHandler(future::fail)
+                    .end();
+        }, Throwable::getMessage).setHandler(ar -> {
+            if (ar.failed()) {
+                future.fail(ar.cause());
             }
-        })
-                .exceptionHandler(future::fail)
-                .end();
+        });
+        
         return future.map(inv -> new JsonObject()
                 .put("id", item.getBookId())
                 .put("inventory", inv)
@@ -308,8 +323,8 @@ public class CartServiceImpl implements CartService {
                     .collect(Collectors.toList());
             return CompositeFutureImpl.all(futures.toArray(new Future[futures.size()]))
                     .map(v -> futures.stream()
-                            .map(Future::result)
-                            .collect(Collectors.toList())
+                    .map(Future::result)
+                    .collect(Collectors.toList())
                     )
                     .map(r -> {
                         ServiceDiscovery.releaseServiceObject(discovery, client);
@@ -350,7 +365,7 @@ public class CartServiceImpl implements CartService {
         addCartEvent(event, resFuture.completer());
         return resFuture;
     }
-
+    
     String PAYMENT_EVENT_ADDRESS = "events.service.shopping.to.payment";
     String ORDER_EVENT_ADDRESS = "events.service.shopping.to.order";
 }

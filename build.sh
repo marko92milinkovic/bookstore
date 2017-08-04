@@ -9,5 +9,5 @@ docker build -t "bookstore/api-gateway" $DIR/api-gateway
 docker build -t "bookstore/inventory-microservice" $DIR/inventory-microservice
 docker build -t "bookstore/order-microservice" $DIR/order-microservice
 docker build -t "bookstore/book-microservice" $DIR/book-microservice
-docker build -t "bookstore/cart-microservice" $DIR/cart-service
+docker build -t "bookstore/cart-service" $DIR/cart-service
 docker build -t "bookstore/customer-microservice" $DIR/customer-microservice

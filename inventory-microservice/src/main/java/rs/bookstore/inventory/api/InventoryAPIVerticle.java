@@ -13,6 +13,9 @@ import rs.bookstore.constants.MicroServiceNamesConstants;
 import rs.bookstore.constants.PortsConstants;
 import rs.bookstore.lib.MicroServiceVerticle;
 
+import java.net.URL;
+import java.net.URLClassLoader;
+
 /**
  *
  * @author markom
@@ -23,6 +26,14 @@ public class InventoryAPIVerticle extends MicroServiceVerticle {
     public void start(Future<Void> startFuture) throws Exception {
         super.start();
 
+        System.out.println("ISPROBAVAMO!!!!!!!!!");
+        ClassLoader cl = ClassLoader.getSystemClassLoader();
+
+        URL[] urls = ((URLClassLoader)cl).getURLs();
+
+        for(URL url: urls){
+            System.out.println(url);
+        }
         Router router = Router.router(vertx);
         router.get(API_INCR).handler(this::increase);
         router.get(API_DECR).handler(this::decrease);
@@ -33,7 +44,7 @@ public class InventoryAPIVerticle extends MicroServiceVerticle {
 
         vertx.createHttpServer().requestHandler(router::accept).listen(port, host);
 
-        vertx.deployVerticle("src/main/resources/InventoryStorageVerticle.groovy",
+        vertx.deployVerticle("InventoryStorageVerticle.groovy",
                 ar -> {
                     if (ar.succeeded()) {
                         publishHttpEndpoint(MicroServiceNamesConstants.INVENTORY_SERVICE,

@@ -70,14 +70,9 @@ public class HttpServerVerticle extends MicroServiceVerticle {
     @Override
     public void start(Future<Void> startFuture) throws Exception {
         super.start();
-        String uri = "mongodb://localhost:27017";
-        String db = "master";
 
-        JsonObject mongoconfig = new JsonObject()
-                .put("connection_string", uri)
-                .put("db_name", db);
 
-        MongoClient client = MongoClient.createShared(vertx, mongoconfig);
+        MongoClient client = MongoClient.createShared(vertx, config());
         JsonObject authProperties = new JsonObject();
         authProvider = MongoAuth.create(client, authProperties);
         authProvider.setCollectionName("user");
@@ -181,6 +176,7 @@ public class HttpServerVerticle extends MicroServiceVerticle {
     }
 
     private void dispatchBookRequests(RoutingContext rc) {
+        System.out.println("Dispatch book request");
         cb_api_book.executeWithFallback(cbFuture -> {
             discovery.getRecord(record
                     -> record.getType().equals(HttpEndpoint.TYPE)
