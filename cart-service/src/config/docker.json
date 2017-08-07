@@ -3,5 +3,6 @@
   "password" : "root",
   "url": "jdbc:mysql://mysql:3306/master?serverTimezone=UTC",
   "driver_class": "com.mysql.cj.jdbc.Driver",
-  "max_pool_size": 30
+  "max_pool_size": 30,
+  "http.host" : "cart-service"
 }

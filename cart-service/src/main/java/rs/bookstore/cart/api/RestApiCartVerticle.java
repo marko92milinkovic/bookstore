@@ -55,7 +55,7 @@ public class RestApiCartVerticle extends MicroServiceVerticle {
         cartService = new CartServiceImpl(Vertx.newInstance(vertx), config(), discovery);
         
         int port = config().getInteger("http.port", PortsConstants.CART_SERVICE_HTTP_PORT);
-        String host = "0.0.0.0";
+        String host = config().getString("http.host", "localhost");
         vertx.createHttpServer()
                 .requestHandler(router::accept)
                 .listen(port, host, RxHelper.toFuture(server

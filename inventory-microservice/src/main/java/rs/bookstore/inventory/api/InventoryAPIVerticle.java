@@ -26,14 +26,6 @@ public class InventoryAPIVerticle extends MicroServiceVerticle {
     public void start(Future<Void> startFuture) throws Exception {
         super.start();
 
-        System.out.println("ISPROBAVAMO!!!!!!!!!");
-        ClassLoader cl = ClassLoader.getSystemClassLoader();
-
-        URL[] urls = ((URLClassLoader)cl).getURLs();
-
-        for(URL url: urls){
-            System.out.println(url);
-        }
         Router router = Router.router(vertx);
         router.get(API_INCR).handler(this::increase);
         router.get(API_DECR).handler(this::decrease);

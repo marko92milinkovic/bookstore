@@ -1,0 +1,22 @@
+INFO	?	main	2017-08-06T08:15:15.636Z	org.javacs.Main#connectToNode	Connected to parent using socket on port 55282
+INFO	?	main	2017-08-06T08:15:16.467Z	org.javacs.JavaLanguageServer#doLint	Lint /home/marko/Desktop/bookstore/cart-service/src/main/java/rs/bookstore/cart/api/RestApiCartVerticle.java
+INFO	?	main	2017-08-06T08:15:16.501Z	org.javacs.JavaLanguageServer#buildClassPath	Emit classpath to /tmp/classpath6601569510357522568.txt
+INFO	?	main	2017-08-06T08:15:39.406Z	org.javacs.JavaLanguageServer#sourceDirectories	Use default source directory src/main/java
+INFO	?	main	2017-08-06T08:15:39.409Z	org.javacs.JavaLanguageServer#sourceDirectories	Use default test directory src/test/java
+INFO	?	InitialIndex	2017-08-06T08:15:40.005Z	org.javacs.SymbolIndex$1#parseAll	Index /home/marko/Desktop/bookstore/cart-service/src/main/java/rs/bookstore/cart/service/impl/CartServiceImpl.java
+INFO	?	InitialIndex	2017-08-06T08:15:40.153Z	org.javacs.SymbolIndex$1#parseAll	Index /home/marko/Desktop/bookstore/cart-service/src/main/java/rs/bookstore/cart/service/CartService.java
+INFO	?	InitialIndex	2017-08-06T08:15:40.156Z	org.javacs.SymbolIndex$1#parseAll	Index /home/marko/Desktop/bookstore/cart-service/src/main/java/rs/bookstore/cart/api/RestApiCartVerticle.java
+INFO	?	InitialIndex	2017-08-06T08:15:40.166Z	org.javacs.SymbolIndex$1#parseAll	Index /home/marko/Desktop/bookstore/cart-service/src/main/java/rs/bookstore/cart/repository/CartEventDAO.java
+INFO	?	InitialIndex	2017-08-06T08:15:40.167Z	org.javacs.SymbolIndex$1#parseAll	Index /home/marko/Desktop/bookstore/cart-service/src/main/java/rs/bookstore/cart/repository/impl/CartEventDAOImpl.java
+INFO	?	InitialIndex	2017-08-06T08:15:40.174Z	org.javacs.SymbolIndex$1#parseAll	Index /home/marko/Desktop/bookstore/cart-service/src/main/java/rs/bookstore/cart/Cart.java
+INFO	?	InitialIndex	2017-08-06T08:15:40.179Z	org.javacs.SymbolIndex$1#parseAll	Index /home/marko/Desktop/bookstore/cart-service/src/main/java/rs/bookstore/cart/package-info.java
+INFO	?	InitialIndex	2017-08-06T08:15:40.184Z	org.javacs.SymbolIndex$1#parseAll	Index /home/marko/Desktop/bookstore/cart-service/src/main/java/rs/bookstore/cart/event/CartEvent.java
+INFO	?	main	2017-08-06T08:16:29.304Z	org.javacs.JavaLanguageServer#doLint	Lint /home/marko/Desktop/bookstore/cart-service/src/main/java/rs/bookstore/cart/api/RestApiCartVerticle.java
+INFO	?	main	2017-08-06T08:56:37.136Z	org.javacs.JavaLanguageServer#doLint	Lint /home/marko/Desktop/bookstore/inventory-microservice/src/main/java/rs/bookstore/inventory/api/InventoryAPIVerticle.java
+INFO	?	main	2017-08-06T08:56:37.138Z	org.javacs.JavaLanguageServer#buildClassPath	Emit classpath to /tmp/classpath8526589946736821653.txt
+INFO	?	main	2017-08-06T08:56:43.661Z	org.javacs.JavaLanguageServer#sourceDirectories	Use default source directory src/main/java
+INFO	?	main	2017-08-06T08:56:43.666Z	org.javacs.JavaLanguageServer#sourceDirectories	Use default test directory src/test/java
+INFO	?	InitialIndex	2017-08-06T08:56:43.676Z	org.javacs.SymbolIndex$1#parseAll	Index /home/marko/Desktop/bookstore/inventory-microservice/src/main/java/TestVerticle.java
+INFO	?	InitialIndex	2017-08-06T08:56:43.687Z	org.javacs.SymbolIndex$1#parseAll	Index /home/marko/Desktop/bookstore/inventory-microservice/src/main/java/rs/bookstore/inventory/api/InventoryAPIVerticle.java
+INFO	?	main	2017-08-06T08:56:48.759Z	org.javacs.JavaLanguageServer#doLint	Lint /home/marko/Desktop/bookstore/inventory-microservice/src/main/java/rs/bookstore/inventory/api/InventoryAPIVerticle.java
+INFO	?	main	2017-08-06T10:39:03.494Z	org.javacs.Main#run	Connection closed

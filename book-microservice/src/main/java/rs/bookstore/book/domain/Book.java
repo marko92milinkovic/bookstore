@@ -28,6 +28,7 @@ public class Book {
     }
 
     public Book(JsonObject json) {
+        System.out.println("Knjiga: "+json);
         json.put("bookId", json.getLong("_id", json.getLong("bookId", 8888l)));
         BookConverter.fromJson(json, this);
     }

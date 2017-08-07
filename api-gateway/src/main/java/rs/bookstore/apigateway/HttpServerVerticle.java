@@ -78,7 +78,7 @@ public class HttpServerVerticle extends MicroServiceVerticle {
         authProvider.setCollectionName("user");
         authProvider.setPasswordField("password");
         authProvider.setUsernameField("username");
-        authProvider.getHashStrategy().setSaltStyle(HashSaltStyle.NO_SALT);
+        authProvider.getHashStrategy().setSaltStyle(HashSaltStyle.EXTERNAL);
         authProvider.setPermissionField("permission");
 
         Router router = Router.router(vertx);
