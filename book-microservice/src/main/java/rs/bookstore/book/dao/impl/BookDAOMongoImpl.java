@@ -9,16 +9,32 @@ import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.mongo.MongoClient;
-import java.util.List;
-import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
 import rs.bookstore.book.dao.BookDAO;
 import rs.bookstore.book.domain.Book;
 
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Repository
 public class BookDAOMongoImpl extends BookDAO {
 
-    private final MongoClient mongoClient;
+    private static final String COLLECTION = "books";
+    @Autowired
+    Vertx vertx;
+    @Inject
+    JsonObject config;
+    private MongoClient mongoClient;
 
-    public BookDAOMongoImpl(Vertx vertx, JsonObject config) {
+    public BookDAOMongoImpl() {
+    }
+
+    @PostConstruct
+    private void init() {
+        System.out.println("Book DAO init");
         mongoClient = MongoClient.createShared(vertx, config);
     }
 
@@ -75,6 +91,5 @@ public class BookDAOMongoImpl extends BookDAO {
 
         return future;
     }
-    private static final String COLLECTION = "books";
 
 }

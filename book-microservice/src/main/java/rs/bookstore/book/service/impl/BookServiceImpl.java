@@ -8,22 +8,23 @@ package rs.bookstore.book.service.impl;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
-import io.vertx.core.json.JsonObject;
-import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 import rs.bookstore.book.dao.BookDAO;
-import rs.bookstore.book.dao.impl.BookDAOMongoImpl;
 import rs.bookstore.book.domain.Book;
 import rs.bookstore.book.service.BookService;
 
+import java.util.List;
+
+@Service
 public class BookServiceImpl implements BookService {
 
-//    private final MongoClient mongoClient;
-    private final BookDAO bookDAO;
+    private static final String COLLECTION = "books";
+    @Autowired
+    private BookDAO bookDAO;
 
-    public BookServiceImpl(Vertx vertx, JsonObject config) {
-//        mongoClient = MongoClient.createShared(vertx, config);
-        bookDAO = new BookDAOMongoImpl(vertx, config);
+    public BookServiceImpl() {
+
     }
 
     @Override
@@ -55,6 +56,5 @@ public class BookServiceImpl implements BookService {
     public BookService deleteBook(long bookID, Handler<AsyncResult<Book>> resultHandler) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
-    private static final String COLLECTION = "books";
 
 }

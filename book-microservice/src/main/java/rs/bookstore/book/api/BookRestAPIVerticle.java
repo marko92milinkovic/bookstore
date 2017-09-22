@@ -5,46 +5,49 @@
  */
 package rs.bookstore.book.api;
 
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.eventbus.Message;
-import io.vertx.core.eventbus.impl.MessageImpl;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
-import io.vertx.rx.java.ObservableFuture;
-import io.vertx.rx.java.ObservableHandler;
 import io.vertx.rx.java.RxHelper;
 import io.vertx.serviceproxy.ProxyHelper;
+import org.jacpfx.vertx.spring.SpringVerticle;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import rs.bookstore.book.SpringConfiguration;
 import rs.bookstore.book.domain.Book;
 import rs.bookstore.book.service.BookService;
-
-import static rs.bookstore.book.service.BookService.SERVICE_ADDRESS;
-import rs.bookstore.book.service.impl.BookServiceImpl;
 import rs.bookstore.constants.MicroServiceNamesConstants;
 import rs.bookstore.lib.MicroServiceVerticle;
 import rx.Observer;
-import rx.Single;
 
 import java.util.List;
 
+import static rs.bookstore.book.service.BookService.SERVICE_ADDRESS;
+
 
 /**
- *
  * @author marko
  */
+@SpringVerticle(springConfig = SpringConfiguration.class)
+@Component
 public class BookRestAPIVerticle extends MicroServiceVerticle {
 
+    private static final String API_ADD = "/add";
+    private static final String API_GET_ONE = "/books/:bookId";
+    private static final String API_GET_ALL = "/books";
+    private static final String API_DELETE = "/:bookId";
+    private static final String API_UPDATE = "/:bookId";
+    @Autowired
     private BookService bookService;
 
     @Override
     public void start(Future<Void> startFuture) throws Exception {
         super.start();
-        bookService = new BookServiceImpl(vertx, config());
+//        bookService = new BookServiceImpl();
         final Router router = Router.router(vertx);
         //body handler
         router.route().handler(BodyHandler.create());
@@ -153,8 +156,8 @@ public class BookRestAPIVerticle extends MicroServiceVerticle {
 //        bookService.getAllBooks(asyncResultHandler);
 
 
-        bookService.getAllBooks(RxHelper.toFuture( books -> rc.response().end(new JsonArray(books).encodePrettily()),
-                                                    error-> rc.response().setStatusCode(500).end(error.getMessage())));
+        bookService.getAllBooks(RxHelper.toFuture(books -> rc.response().end(new JsonArray(books).encodePrettily()),
+                error -> rc.response().setStatusCode(500).end(error.getMessage())));
 
 //        ObservableFuture<List<Book>> booksObservableFuture = RxHelper.observableFuture();
 //
@@ -167,12 +170,5 @@ public class BookRestAPIVerticle extends MicroServiceVerticle {
 //        bookService.getAllBooks(asyncResultHandler);
 
     }
-
-
-    private static final String API_ADD = "/add";
-    private static final String API_GET_ONE = "/books/:bookId";
-    private static final String API_GET_ALL = "/books";
-    private static final String API_DELETE = "/:bookId";
-    private static final String API_UPDATE = "/:bookId";
 
 }
