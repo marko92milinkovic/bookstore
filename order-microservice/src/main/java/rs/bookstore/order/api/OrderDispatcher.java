@@ -7,13 +7,9 @@ package rs.bookstore.order.api;
 
 import io.vertx.core.Future;
 import io.vertx.core.eventbus.Message;
-import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.json.JsonObject;
-import io.vertx.servicediscovery.types.HttpEndpoint;
-import io.vertx.servicediscovery.types.MessageSource;
-import java.util.List;
-import rs.bookstore.lib.MicroServiceVerticle;
+
 import rs.bookstore.lib.RxMicroServiceVerticle;
 import rs.bookstore.order.Order;
 import rs.bookstore.order.impl.OrderServiceImpl;

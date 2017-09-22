@@ -1,14 +1,10 @@
 package rs.bookstore.lib;
 
-import io.vertx.circuitbreaker.CircuitBreaker;
-import io.vertx.circuitbreaker.CircuitBreakerOptions;
 import io.vertx.core.*;
 import io.vertx.core.http.HttpServer;
-import io.vertx.core.impl.CompositeFutureImpl;
 import io.vertx.core.impl.ConcurrentHashSet;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
-import io.vertx.ext.web.RoutingContext;
 import io.vertx.servicediscovery.Record;
 import io.vertx.servicediscovery.ServiceDiscovery;
 import io.vertx.servicediscovery.ServiceDiscoveryOptions;
@@ -19,9 +15,7 @@ import io.vertx.servicediscovery.types.MessageSource;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
-import java.util.function.BiConsumer;
 
 /**
  *

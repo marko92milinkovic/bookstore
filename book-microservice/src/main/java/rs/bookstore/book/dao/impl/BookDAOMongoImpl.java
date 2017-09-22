@@ -48,17 +48,13 @@ public class BookDAOMongoImpl extends BookDAO {
 
     @Override
     public Future<Book> retrieveOne(Long id) {
-        Future<Book> bookFuture = Future.future();
+        Future<JsonObject> jsonFuture = Future.future();
 
         mongoClient.findOne(COLLECTION,
                 new JsonObject().put("_id", id),
-                new JsonObject(), ar -> {
-                    if (ar.succeeded()) {
-                        bookFuture.complete(new Book(ar.result()));
-                    } else {
-                        bookFuture.fail(ar.cause());
-                    }
-                });
+                new JsonObject(), jsonFuture.completer());
+
+        Future<Book> bookFuture = jsonFuture.compose(json -> Future.<Book>succeededFuture(new Book(json)));
 
         return bookFuture;
     }

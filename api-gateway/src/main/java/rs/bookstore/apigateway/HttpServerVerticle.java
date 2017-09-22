@@ -34,10 +34,7 @@ import io.vertx.ext.web.handler.sockjs.PermittedOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
 import io.vertx.ext.web.sstore.LocalSessionStore;
 import io.vertx.rx.java.RxHelper;
-import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.core.buffer.Buffer;
-import io.vertx.rxjava.core.http.HttpClientResponse;
-import io.vertx.rxjava.ext.web.client.HttpRequest;
 import io.vertx.rxjava.ext.web.client.HttpResponse;
 import io.vertx.rxjava.ext.web.client.WebClient;
 import io.vertx.servicediscovery.Record;
@@ -51,7 +48,6 @@ import static rs.bookstore.constants.MicroServiceNamesConstants.CUSTOMER_SERVICE
 import rs.bookstore.customer.service.Customer;
 import rs.bookstore.customer.service.CustomerService;
 import rs.bookstore.lib.MicroServiceVerticle;
-import rx.Observable;
 import rx.Single;
 
 /**

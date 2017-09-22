@@ -7,10 +7,10 @@ package rs.bookstore.book.domain;
 
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
+
 import java.util.List;
 
 /**
- *
  * @author marko
  */
 @DataObject(generateConverter = true)

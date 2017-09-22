@@ -13,9 +13,6 @@ import rs.bookstore.constants.MicroServiceNamesConstants;
 import rs.bookstore.constants.PortsConstants;
 import rs.bookstore.lib.MicroServiceVerticle;
 
-import java.net.URL;
-import java.net.URLClassLoader;
-
 /**
  *
  * @author markom

@@ -7,7 +7,6 @@ package rs.bookstore.reviews;
 
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
-import java.util.Date;
 
 /**
  *

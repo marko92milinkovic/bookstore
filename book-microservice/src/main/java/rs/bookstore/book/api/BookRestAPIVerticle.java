@@ -5,22 +5,33 @@
  */
 package rs.bookstore.book.api;
 
-import io.vertx.core.CompositeFuture;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.http.HttpServer;
+import io.vertx.core.Handler;
+import io.vertx.core.eventbus.Message;
+import io.vertx.core.eventbus.impl.MessageImpl;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
+import io.vertx.rx.java.ObservableFuture;
+import io.vertx.rx.java.ObservableHandler;
+import io.vertx.rx.java.RxHelper;
 import io.vertx.serviceproxy.ProxyHelper;
 import rs.bookstore.book.domain.Book;
 import rs.bookstore.book.service.BookService;
+
 import static rs.bookstore.book.service.BookService.SERVICE_ADDRESS;
 import rs.bookstore.book.service.impl.BookServiceImpl;
 import rs.bookstore.constants.MicroServiceNamesConstants;
 import rs.bookstore.lib.MicroServiceVerticle;
+import rx.Observer;
+import rx.Single;
+
+import java.util.List;
+
 
 /**
  *
@@ -70,7 +81,6 @@ public class BookRestAPIVerticle extends MicroServiceVerticle {
 
         bookService.addBook(book, ar -> {
             if (ar.failed()) {
-                routingContext.fail(ar.cause());
                 routingContext.response()
                         .setStatusCode(400)
                         .end("Book not added");
@@ -100,7 +110,6 @@ public class BookRestAPIVerticle extends MicroServiceVerticle {
 
         bookService.getBook(bookId, ar -> {
             if (ar.failed()) {
-                routingContext.fail(ar.cause());
                 routingContext.response()
                         .setStatusCode(404)
                         .end("Book not found");
@@ -111,16 +120,54 @@ public class BookRestAPIVerticle extends MicroServiceVerticle {
     }
 
     private void retrieveAll(RoutingContext rc) {
-        bookService.getAllBooks(ar -> {
-            if (ar.failed()) {
-                System.out.println("Failed: " + ar.cause());
-                rc.response().setStatusCode(500).end("Server error");
-            } else {
-                System.out.println("RESULT: " + ar.result());
-                rc.response().end(new JsonArray(ar.result()).encodePrettily());
+//        bookService.getAllBooks(ar -> {
+//            if (ar.failed()) {
+//                rc.response().setStatusCode(500).end(ar.cause().getMessage());
+//            } else {
+//                rc.response().end(new JsonArray(ar.result()).encodePrettily());
+//            }
+//        });
+
+
+        Observer<List<Book>> observer = new Observer<List<Book>>() {
+            @Override
+            public void onCompleted() {
+
             }
-        });
+
+            @Override
+            public void onError(Throwable e) {
+                rc.response().setStatusCode(500).end(e.getMessage());
+            }
+
+            @Override
+            public void onNext(List<Book> bookList) {
+                rc.response().end(new JsonArray(bookList).encodePrettily());
+            }
+        };
+//        Handler<AsyncResult<List<Book>>> asyncResultHandler = RxHelper.toFuture(observer);
+//
+//        Handler<AsyncResult<List<Book>>> asyncResultHandler = RxHelper.toFuture( books -> rc.response().end(new JsonArray(books).encodePrettily()),
+//                error-> rc.response().setStatusCode(500).end(error.getMessage()));
+//
+//        bookService.getAllBooks(asyncResultHandler);
+
+
+        bookService.getAllBooks(RxHelper.toFuture( books -> rc.response().end(new JsonArray(books).encodePrettily()),
+                                                    error-> rc.response().setStatusCode(500).end(error.getMessage())));
+
+//        ObservableFuture<List<Book>> booksObservableFuture = RxHelper.observableFuture();
+//
+//        booksObservableFuture.subscribe(
+//                books -> rc.response().end(new JsonArray(books).encodePrettily()),
+//                error -> rc.response().setStatusCode(500).end(error.getMessage())
+//        );
+//
+//        Handler<AsyncResult<List<Book>>> asyncResultHandler = booksObservableFuture.toHandler();
+//        bookService.getAllBooks(asyncResultHandler);
+
     }
+
 
     private static final String API_ADD = "/add";
     private static final String API_GET_ONE = "/books/:bookId";

@@ -5,7 +5,6 @@
  */
 package rs.bookstore.book.domain;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.core.json.JsonObject;
