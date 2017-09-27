@@ -73,5 +73,3 @@ services:
       - order-microservice
       - customer-microservice
       - mongo
-    extra_hosts:
-      - "dockernet:${EXTERNAL_IP}"

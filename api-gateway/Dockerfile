@@ -13,4 +13,4 @@ COPY src/config/docker.json $VERTICLE_HOME
 
 WORKDIR $VERTICLE_HOME
 ENTRYPOINT ["sh", "-c"]
-CMD ["java -jar api-gateway-1.0-SNAPSHOT-fat.jar -cluster -ha -conf docker.json"]
+CMD ["java -jar api-gateway-1.0-SNAPSHOT-fat.jar -Dvertx.disableDnsResolver=true -cluster -ha -conf docker.json"]

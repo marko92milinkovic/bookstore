@@ -13,4 +13,4 @@ COPY src/main/resources/ $VERTICLE_HOME/src/main/resources/
 
 WORKDIR $VERTICLE_HOME
 ENTRYPOINT ["sh", "-c"]
-CMD ["java -jar inventory-microservice-1.0-SNAPSHOT-fat.jar -cluster -conf docker.json"]
+CMD ["java -jar inventory-microservice-1.0-SNAPSHOT-fat.jar -Dvertx.disableDnsResolver=true -cluster -conf docker.json"]

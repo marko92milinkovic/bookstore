@@ -12,4 +12,4 @@ COPY src/config/docker.json $VERTICLE_HOME/src/conf/config.json
 
 WORKDIR $VERTICLE_HOME
 ENTRYPOINT ["sh", "-c"]
-CMD ["java -jar cart-service-1.0-SNAPSHOT-fat.jar -cluster -conf docker.json"]
+CMD ["java -jar cart-service-1.0-SNAPSHOT-fat.jar -Dvertx.disableDnsResolver=true -cluster -conf docker.json"]
