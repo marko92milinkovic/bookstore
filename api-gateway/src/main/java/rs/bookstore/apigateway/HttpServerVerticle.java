@@ -8,12 +8,12 @@ package rs.bookstore.apigateway;
 import io.vertx.circuitbreaker.CircuitBreaker;
 import io.vertx.circuitbreaker.CircuitBreakerOptions;
 import io.vertx.circuitbreaker.HystrixMetricHandler;
+import io.vertx.codegen.annotations.Nullable;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.http.HttpClient;
-import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.User;
 import io.vertx.ext.auth.mongo.HashSaltStyle;
@@ -21,50 +21,50 @@ import io.vertx.ext.auth.mongo.MongoAuth;
 import io.vertx.ext.mongo.MongoClient;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.ext.web.handler.BodyHandler;
-import io.vertx.ext.web.handler.CookieHandler;
-import io.vertx.ext.web.handler.FormLoginHandler;
-//import io.vertx.ext.web.handler.FormLoginHandler;
-import io.vertx.ext.web.handler.RedirectAuthHandler;
-import io.vertx.ext.web.handler.SessionHandler;
-import io.vertx.ext.web.handler.StaticHandler;
-import io.vertx.ext.web.handler.UserSessionHandler;
+import io.vertx.ext.web.handler.*;
 import io.vertx.ext.web.handler.sockjs.BridgeOptions;
 import io.vertx.ext.web.handler.sockjs.PermittedOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
 import io.vertx.ext.web.sstore.LocalSessionStore;
 import io.vertx.rx.java.RxHelper;
 import io.vertx.rxjava.core.buffer.Buffer;
+import io.vertx.rxjava.ext.web.client.HttpRequest;
 import io.vertx.rxjava.ext.web.client.HttpResponse;
 import io.vertx.rxjava.ext.web.client.WebClient;
 import io.vertx.servicediscovery.Record;
 import io.vertx.servicediscovery.types.EventBusService;
 import io.vertx.servicediscovery.types.HttpEndpoint;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.OptionalDouble;
+import rs.bookstore.book.domain.Book;
 import rs.bookstore.constants.MicroServiceNamesConstants;
-import static rs.bookstore.constants.MicroServiceNamesConstants.CUSTOMER_SERVICE_RPC;
 import rs.bookstore.customer.service.Customer;
 import rs.bookstore.customer.service.CustomerService;
 import rs.bookstore.lib.MicroServiceVerticle;
 import rx.Single;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.OptionalDouble;
+
+import static rs.bookstore.constants.MicroServiceNamesConstants.BOOK_SERVICE_HTTP;
+import static rs.bookstore.constants.MicroServiceNamesConstants.CUSTOMER_SERVICE_RPC;
+
+//import io.vertx.ext.web.handler.FormLoginHandler;
+
 /**
- *
  * @author markom
  */
 public class HttpServerVerticle extends MicroServiceVerticle {
 
     MongoAuth authProvider;
     //temporary storage
-    List<JsonObject> reviews = new ArrayList<>();
+    List <JsonObject> reviews = new ArrayList <>();
     private CircuitBreaker cb_api_book;
     private CircuitBreaker cb_api_cart;
     private CircuitBreaker cb_api_customer;
 
     @Override
-    public void start(Future<Void> startFuture) throws Exception {
+    public void start(Future <Void> startFuture) throws Exception {
         super.start();
 
 
@@ -94,18 +94,21 @@ public class HttpServerVerticle extends MicroServiceVerticle {
 //        router.route("/auth/*").handler(RedirectAuthHandler.create(authProvider, "/view/login.html"));
 
         // book api dispatcher
-        router.route("/api/bookservice/*").handler(this::dispatchBookRequests);
-
+//        router.route("/api/bookservice/*").handler(rc -> dispatchHttpServiceRequest(rc, cb_api_book,
+//                MicroServiceNamesConstants.BOOK_SERVICE_HTTP));
+        router.route("/api/bookservice/*").handler(this::dispatchBookRequestusingHystrix);
+        router.post("/customer/create").handler(this::createCustomer);
         // reviews
         router.route("/api/reviews/*").handler(this::dispatchReviewRequest);
         router.route("/eventbus/reviews/*").handler(eventbusReviewsHandler());
-
         //hystrix dashboard
         // Register the metric handler
         router.get("/hystrix-metrics").handler(HystrixMetricHandler.create(vertx));
 
         //cart
-        router.route("/api/cartservice/*").handler(this::dispatchCartRequests);
+        router.route("/api/cartservice/*")
+                .handler(RedirectAuthHandler.create(authProvider, "/view/login.html"))
+                .handler(rc-> dispatchHttpServiceRequest(rc, cb_api_cart, MicroServiceNamesConstants.CART_SERVICE_HTTP));
 
         // Serve the static private pages from directory 'private'
         router.route("/private/*").handler(StaticHandler.create().setCachingEnabled(false).setWebRoot("private"));
@@ -143,27 +146,58 @@ public class HttpServerVerticle extends MicroServiceVerticle {
                 cbConfig.getString("name_cb_api_book", "cb: api-> book"),
                 vertx,
                 new CircuitBreakerOptions()
-                .setMaxFailures(cbConfig.getInteger("max_failures", 3))
-                .setFallbackOnFailure(true)
-                .setTimeout(cbConfig.getLong("timeout", 3000l))
-                .setResetTimeout(cbConfig.getLong("reset_timeout", 7000l)));
+                        .setMaxFailures(cbConfig.getInteger("max_failures", 3))
+                        .setFallbackOnFailure(true)
+                        .setTimeout(cbConfig.getLong("timeout", 3000l))
+                        .setResetTimeout(cbConfig.getLong("reset_timeout", 5000l)));
         cb_api_cart = CircuitBreaker.create(
                 cbConfig.getString("name_cb_api_cart", "cb: api-> cart"),
                 vertx,
                 new CircuitBreakerOptions()
-                .setMaxFailures(cbConfig.getInteger("max_failures", 3))
-                .setFallbackOnFailure(true)
-                .setTimeout(cbConfig.getLong("timeout", 3000l))
-                .setResetTimeout(cbConfig.getLong("reset_timeout", 7000l)));
+                        .setMaxFailures(cbConfig.getInteger("max_failures", 3))
+                        .setFallbackOnFailure(true)
+                        .setTimeout(cbConfig.getLong("timeout", 3000l))
+                        .setResetTimeout(cbConfig.getLong("reset_timeout", 7000l)));
         cb_api_customer = CircuitBreaker.create(
                 cbConfig.getString("name_cb_api_cart", "cb: api-> customer"),
                 vertx,
                 new CircuitBreakerOptions()
-                .setMaxFailures(cbConfig.getInteger("max_failures", 3))
-                .setFallbackOnFailure(true)
-                .setTimeout(cbConfig.getLong("timeout", 3000l))
-                .setResetTimeout(cbConfig.getLong("reset_timeout", 7000l)));
+                        .setMaxFailures(cbConfig.getInteger("max_failures", 3))
+                        .setFallbackOnFailure(true)
+                        .setTimeout(cbConfig.getLong("timeout", 3000l))
+                        .setResetTimeout(cbConfig.getLong("reset_timeout", 7000l)));
 
+
+    }
+
+    private void createCustomer(RoutingContext rc) {
+        Future <CustomerService> futureCustomerService = Future.future();
+        EventBusService.getServiceProxyWithJsonFilter(
+                discovery,
+                new JsonObject().put("name", CUSTOMER_SERVICE_RPC),
+                CustomerService.class,
+                futureCustomerService.completer());
+
+        String username = rc.request().getParam("username");
+        String password = rc.request().getParam("password");
+        if(username.isEmpty() || password.isEmpty()) {
+            rc.response().end("username and password are mandatory");
+            return;
+        }
+
+        futureCustomerService.compose(service -> {
+            Future<Customer> createdCustomer = Future.future();
+            service.createNewCustomer(new Customer(rc.getBodyAsJson()), createdCustomer.completer());
+            return createdCustomer;
+        }).compose(customer -> {
+            Future<String> insert = Future.future();
+            authProvider.insertUser(username, password,
+                    Arrays.asList("customer"), Arrays.asList("customer"),insert.completer());
+            return  insert;
+        }).setHandler(RxHelper.toFuture(
+           result-> rc.response().end(new JsonObject().put("status", result).encode()),
+           error-> rc.response().end("error", error.getMessage())
+        ));
     }
 
     private void addToCart(RoutingContext rc) {
@@ -175,121 +209,52 @@ public class HttpServerVerticle extends MicroServiceVerticle {
         System.out.println("Dispatch book request");
         cb_api_book.executeWithFallback(cbFuture -> {
             discovery.getRecord(record
-                    -> record.getType().equals(HttpEndpoint.TYPE)
-                    && record.getName().equals(MicroServiceNamesConstants.BOOK_SERVICE_HTTP), ar -> {
+                            -> record.getType().equals(HttpEndpoint.TYPE)
+                            && record.getName().equals(BOOK_SERVICE_HTTP), ar -> {
 
-                if (ar.succeeded() && ar.result() != null) {
+                        if (ar.succeeded() && ar.result() != null) {
 
-                    Record bookMicroserviceRecord = ar.result();
-                    WebClient webClient
-                            = discovery.getReference(bookMicroserviceRecord).getAs(WebClient.class);
-                    String apiPAth = (rc.request().uri().split("/api/bookservice"))[1];
-                    Single<HttpResponse<Buffer>> singleResponse;
-                    System.out.println("Body: " + rc.getBodyAsString());
-                    if (rc.getBody() == null) {
-                        singleResponse = webClient.request(rc.request().method(), apiPAth)
-                                .rxSend();
-                    } else {
-                        singleResponse = webClient.request(rc.request().method(), apiPAth)
-                                .rxSendBuffer(new Buffer(rc.getBody()));
-                    }
-                    singleResponse.subscribe(
-                            response -> {
-                                if (response.statusCode() >= 500) {
-                                    cbFuture.fail(response.statusCode() + ": " + response.toString());
-                                } else {
-                                    HttpServerResponse toRsp = rc.response()
-                                    .setStatusCode(response.statusCode());
-                                    response.headers().getDelegate().forEach(header -> {
-                                        toRsp.putHeader(header.getKey(), header.getValue());
-                                    });
-                                    System.out.println("Body: " + response.bodyAsString());
-                                    toRsp.end(response.bodyAsString());
-                                    cbFuture.complete();
-                                }
-                            }, cause -> {
-                                if (!rc.response().ended()) {
-                                    rc.response().end(cause.getMessage());
-                                }
-                                cbFuture.fail(cause);
-                            });
-                } else {
-                    rc.response().end("Http microservices not found");
-                    cbFuture.complete();
-                    if (ar.cause() != null) {
-                        ar.cause().printStackTrace();
-                    }
-                }
-            }
-            );
-        }, Throwable::getMessage).setHandler(ar -> {
-            if (ar.failed()) {
-                ar.cause().printStackTrace();
-                rc.response()
-                        .setStatusCode(502)
-                        .putHeader("content-type", "application/json")
-                        .end(new JsonObject().put("error", "bad_gateway")
-                                //.put("message", ex.getMessage())
-                                .encodePrettily());
-            }
-        });
-    }
-
-    private void dispatchCartRequests(RoutingContext rc) {
-        System.out.println("Hocu da dispatcujem carts");
-
-        User user = rc.user();
-        if (user == null) {
-            rc.response().setStatusCode(401).end("not logged in");
-            return;
-        }
-
-        cb_api_cart.executeWithFallback(cbFuture -> {
-            discovery.getRecord(record
-                    -> record.getType().equals(HttpEndpoint.TYPE)
-                    && record.getName().equals(MicroServiceNamesConstants.CART_SERVICE_HTTP),
-                    RxHelper.toFuture(
-                            record -> {
-                                HttpClient httpClient
-                                = discovery.getReference(record).get();
-                                String apiPAth = (rc.request().uri().split("/api/cartservice"))[1];
-
-                                HttpClientRequest req = httpClient.request(rc.request().method(), apiPAth, response -> {
-                                    response.bodyHandler(body -> {
+                            Record bookMicroserviceRecord = ar.result();
+                            WebClient webClient
+                                    = discovery.getReference(bookMicroserviceRecord).getAs(WebClient.class);
+                            String apiPAth = (rc.request().uri().split("/api/bookservice"))[1];
+                            Single <HttpResponse <Buffer>> singleResponse;
+                            System.out.println("Body: " + rc.getBodyAsString());
+                            if (rc.getBody() == null) {
+                                singleResponse = webClient.request(rc.request().method(), apiPAth)
+                                        .rxSend();
+                            } else {
+                                singleResponse = webClient.request(rc.request().method(), apiPAth)
+                                        .rxSendBuffer(new Buffer(rc.getBody()));
+                            }
+                            singleResponse.subscribe(
+                                    response -> {
                                         if (response.statusCode() >= 500) {
-                                            cbFuture.fail(response.statusCode() + ": " + body.toString());
+                                            cbFuture.fail(response.statusCode() + ": " + response.toString());
                                         } else {
                                             HttpServerResponse toRsp = rc.response()
                                                     .setStatusCode(response.statusCode());
-                                            response.headers().forEach(header -> {
+                                            response.headers().getDelegate().forEach(header -> {
                                                 toRsp.putHeader(header.getKey(), header.getValue());
                                             });
-
-                                            System.out.println("RESP is :" + body);
-                                            toRsp.end(body);
+                                            System.out.println("Body: " + response.bodyAsString());
+                                            toRsp.end(response.bodyAsString());
                                             cbFuture.complete();
                                         }
+                                    }, cause -> {
+                                        if (!rc.response().ended()) {
+                                            rc.response().end(cause.getMessage());
+                                        }
+                                        cbFuture.fail(cause);
                                     });
-                                });
-                                if (rc.user() != null) {
-                                    System.out.println("Dodajem user: " + rc.user());
-                                    req.putHeader("user-principal", rc.user().principal().encode());
-                                }
-                                System.out.println("Call cart-microservice on url: " + req.uri());
-
-                                if (rc.getBody() != null) {
-                                    System.out.println("Dodajem body: " + rc.getBodyAsString());
-                                    req.end(rc.getBody());
-                                } else {
-                                    req.end();
-                                }
-                            }, cause -> {
-                                cause.printStackTrace();
-                                if (!rc.response().ended()) {
-                                    rc.response().end("Http microservices not found");
-                                }
-                                cbFuture.complete();
-                            })
+                        } else {
+                            rc.response().end("Http microservices not found");
+                            cbFuture.complete();
+                            if (ar.cause() != null) {
+                                ar.cause().printStackTrace();
+                            }
+                        }
+                    }
             );
         }, Throwable::getMessage).setHandler(ar -> {
             if (ar.failed()) {
@@ -302,7 +267,6 @@ public class HttpServerVerticle extends MicroServiceVerticle {
                                 .encodePrettily());
             }
         });
-
     }
 
     private void getCustomerCredentials(RoutingContext rc) {
@@ -321,10 +285,10 @@ public class HttpServerVerticle extends MicroServiceVerticle {
                     .putHeader("content-type", "application/json")
                     .end(new Customer(
                             new JsonObject()
-                            .put("username", "testUsername")
-                            .put("id", "testId")).toJson().encodePrettily());
+                                    .put("username", "testUsername")
+                                    .put("id", "testId")).toJson().encodePrettily());
         } else {
-            Future<CustomerService> futureCustomerService = Future.future();
+            Future <CustomerService> futureCustomerService = Future.future();
             EventBusService.getServiceProxyWithJsonFilter(
                     discovery,
                     new JsonObject().put("name", CUSTOMER_SERVICE_RPC),
@@ -333,7 +297,7 @@ public class HttpServerVerticle extends MicroServiceVerticle {
             cb_api_customer.executeWithFallback(cbFuture -> {
 
                 futureCustomerService.compose(customerService -> {
-                    Future<Customer> customerFuture = Future.future();
+                    Future <Customer> customerFuture = Future.future();
                     customerService.getCustomerByUsername(username, customerFuture.completer());
                     return customerFuture;
                 }).setHandler(ar -> {
@@ -401,29 +365,118 @@ public class HttpServerVerticle extends MicroServiceVerticle {
         rc.response().end("ok :) ");
     }
 
-    //TO DO: refactor
-    private <T> Handler<AsyncResult<T>> resultHandlerNonEmpty(RoutingContext context) {
-        return ar -> {
-            if (ar.succeeded()) {
-                T res = ar.result();
-                if (res == null) {
-                    context.response().end("NOT found....see line 279");
-                } else {
-                    context.response()
-                            .putHeader("content-type", "application/json")
-                            .end(res.toString());
-                }
-            } else {
-                context.response().end(ar.cause().getMessage());
-                ar.cause().printStackTrace();
-            }
-        };
-    }
-
     private SockJSHandler eventbusReviewsHandler() {
         BridgeOptions bridgeOptions = new BridgeOptions()
                 .addOutboundPermitted(new PermittedOptions().setAddressRegex("book\\.reviews\\.[0-9]+"));
 
         return SockJSHandler.create(vertx).bridge(bridgeOptions);
     }
+
+
+    public void dispatchHttpServiceRequest(RoutingContext rc, CircuitBreaker cb, String serviceName) {
+        HttpServerResponse response = rc.response();
+        String apiPath = "/" + (rc.request().uri().split("/api/.+/"))[1];
+        System.out.println("Api path: " + apiPath);
+
+        cb.executeWithFallback(operation -> {
+                    retrieveWebClient(serviceName)
+                            .flatMap(webClient -> {
+                                HttpRequest <Buffer> request = webClient.request(rc.request().method(), apiPath);
+                                if (rc.user() != null) {
+                                    request.putHeader("user-principal", rc.user().principal().encode());
+                                }
+
+                                if (rc.getBody() == null) {
+                                    return request.rxSend();
+                                } else {
+                                    return request.rxSendBuffer(new Buffer(rc.getBody()));
+                                }
+                            })
+                            .subscribe(serviceResp -> {
+                                Buffer body = serviceResp.body();
+                                response.headers().addAll(serviceResp.headers().getDelegate());
+                                response.end(serviceResp.bodyAsString());
+
+                                operation.complete();
+                            }, error -> {
+                                if (!rc.response().ended()) {
+                                    rc.response().end(new JsonObject().encode());
+                                }
+                                operation.fail(error.getCause());
+                            });
+                }, Throwable::getMessage
+        ).setHandler(ar -> {
+            if (ar.failed()) {
+                rc.response().end(new JsonObject().encode());
+            }
+        });
+
+
+
+    }
+    public void getBooks(Handler<AsyncResult<JsonArray>> resultHandler) {
+        // Koрak 2 - Осигурати операцију
+        cb_api_book.executeWithFallback(
+                operation -> {
+                    retrieveWebClient(BOOK_SERVICE_HTTP)
+                            .flatMap(webClient -> webClient.get("/books").rxSend())
+                            .map(HttpResponse::bodyAsJsonArray)
+                            .subscribe(RxHelper.toSubscriber(operation));
+                },
+                // Вратити празан json низ у случају грешке
+                failure -> new JsonArray()
+        ).setHandler(resultHandler); // проследити хендлер
+    }
+
+    private void aloha(RoutingContext rc) {
+        getBooks(RxHelper.toFuture(
+                books->rc.response().end(books.encode()),
+                error->rc.response().end(error.getMessage())
+        ));
+    }
+
+    private Single <Book> getBook() {
+        WebClient client = null;
+
+        int bookId = 5;
+        return client.get("api/get/" + bookId)
+                .timeout(5000)
+                .rxSend()
+                .map(response -> response.bodyAsJson(Book.class));
+    }
+
+    private Single <WebClient> retrieveWebClient(String serviceName) {
+        io.vertx.rxjava.core.Future <Record> recordFuture = io.vertx.rxjava.core.Future.future();
+        discovery.getRecord(record -> record.getName().equals(serviceName),
+                recordFuture.completer());
+        return recordFuture
+                .map(record -> discovery.getReference(record).getAs(WebClient.class))
+                .rxSetHandler();
+    }
+
+    private void dispatchBookRequestusingHystrix(RoutingContext rc) {
+        String apiPath = "/" + (rc.request().uri().split("/api/.+service/"))[1];
+        System.out.println("Api path: " + apiPath);
+
+        BooksHystrixCommand command = new BooksHystrixCommand("book", () ->
+                        retrieveWebClient(BOOK_SERVICE_HTTP)
+                                .flatMap(webClient -> webClient.get(apiPath).rxSend())
+                                .map(body -> body.bodyAsString())
+                                .toObservable());
+
+        System.out.println("Deployment: "+context.deploymentID());
+
+        command.observe()
+                .subscribe(result -> {
+                    System.out.println("Deployment: "+context.deploymentID());
+                    context.runOnContext(v -> {
+                        System.out.println("Thread is: "+Thread.currentThread().getName());
+                        rc.response().end(String.valueOf(result));
+                    });
+                }, error -> {
+                    rc.response().end(new JsonObject().encode());
+                });
+    }
+
+
 }

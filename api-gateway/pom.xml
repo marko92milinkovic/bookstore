@@ -24,7 +24,11 @@
             <artifactId>customer-microservice</artifactId>
             <version>${project.version}</version>
         </dependency>
-        
+        <dependency>
+            <groupId>rs.bookstore</groupId>
+            <artifactId>book-microservice</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-sockjs-service-proxy</artifactId>
@@ -36,7 +40,11 @@
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-web-client</artifactId>
-            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>com.netflix.hystrix</groupId>
+            <artifactId>hystrix-core</artifactId>
+            <version>LATEST</version>
         </dependency>
     </dependencies>
     
