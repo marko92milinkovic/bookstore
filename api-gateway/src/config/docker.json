@@ -1,5 +1,9 @@
 {
-  "db_name": "master",
-  "host": "mongo",
-  "port": 27017
+  "service.host": "localhost",
+  "service.port": "8080",
+  "mongo": {
+    "db_name": "master",
+    "host": "mongo",
+    "port": 27017
+  }
 }

@@ -9,9 +9,9 @@ import io.vertx.codegen.annotations.ProxyGen;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
-import rs.bookstore.cart.Cart;
+import rs.bookstore.cart.domain.Cart;
 import rs.bookstore.order.CheckoutResult;
-import rs.bookstore.cart.event.CartEvent;
+import rs.bookstore.cart.domain.CartEvent;
 
 /**
  *
@@ -24,5 +24,6 @@ public interface CartService {
     void addCartEvent(CartEvent event, Handler<AsyncResult<Void>> resultHandler);
     void getCart(Long customerId, Handler<AsyncResult<Cart>> resultHandler);
     void checkout(Long customerId, Handler<AsyncResult<CheckoutResult>> resultHandler);
+    void saveCart(Cart cart, Handler<AsyncResult<Void>> resultHandler);
 
 }

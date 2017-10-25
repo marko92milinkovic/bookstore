@@ -46,8 +46,11 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderService createOrder(Order order, Handler<AsyncResult<Void>> resultHandler) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        repository.addOne(order)
+                  .subscribe(RxHelper.toSubscriber(resultHandler));
+        return this;
     }
+
 
     @Override
     public OrderService retrieveOrder(Long orderId, Handler<AsyncResult<Order>> resultHandler) {

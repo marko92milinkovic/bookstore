@@ -5,11 +5,16 @@
  */
 package rs.bookstore.order.api;
 
+import io.vertx.core.AsyncResult;
+import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.json.Json;
 import io.vertx.rx.java.RxHelper;
+import io.vertx.rxjava.core.eventbus.Message;
 import io.vertx.rxjava.core.http.HttpServer;
 import io.vertx.rxjava.ext.web.Router;
+import io.vertx.rxjava.ext.web.RoutingContext;
 import io.vertx.serviceproxy.ProxyHelper;
 import rs.bookstore.constants.PortsConstants;
 import rs.bookstore.lib.RxMicroServiceVerticle;
@@ -17,9 +22,16 @@ import rs.bookstore.order.CheckoutResult;
 import rs.bookstore.order.Order;
 import rs.bookstore.order.impl.OrderServiceImpl;
 import rs.bookstore.order.service.OrderService;
+import rx.Observable;
+import rx.Single;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
+
 import static rs.bookstore.order.service.OrderService.SERVICE_ADDRESS;
 import static rs.bookstore.order.service.OrderService.SERVICE_NAME;
-import rx.Single;
 
 /**
  *
@@ -53,18 +65,33 @@ public class OrderApiVerticle extends RxMicroServiceVerticle {
         Single<HttpServer> server = vertx.createHttpServer()
                 .requestHandler(router::accept)
                 .rxListen(port, host);
-        
+
         Single<Void> publishEventBusService = publishEventBusService(SERVICE_NAME, SERVICE_ADDRESS, OrderService.class);
 
         vertx.eventBus().consumer(ORDER_EVENT_ADDRESS, message -> {
             System.out.println("Stigla narudzbina sa zadate adrese: " + message.body());
             message.reply(new CheckoutResult().setOrder(new Order()).setResultMessage("cart checkouted").toJson());
         });
-                
-        Single.concat(server, publishEventBusService)
-                .subscribe(next->{}, startFuture::fail, startFuture::complete);
+
+        Single.concat(server, publishEventBusService, vertx.rxDeployVerticle(TestVerticle.class.getName()))
+                .subscribe(next->{
+                    System.out.println("Proslo: "+next);
+                }, startFuture::fail, startFuture::complete);
     }
-    
+
+    private void handleError(RoutingContext rc, Throwable error) {
+        rc.response().setStatusCode(500).end(error.getMessage());
+    }
+
+    private <T, R> void next(AsyncResult<T> asyncResult, Function<T, R> next) throws Throwable {
+        if (asyncResult.succeeded()) {
+            next.apply(asyncResult.result());
+        } else {
+            throw asyncResult.cause();
+        }
+    }
+
+
     String ORDER_EVENT_ADDRESS = "events.service.shopping.to.order";
 
 //    private Single<Void> prepareDispatcher() {

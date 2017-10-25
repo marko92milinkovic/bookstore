@@ -105,7 +105,7 @@ app.controller('AddToCartCtrl', function ($scope, $http, $rootScope, $location) 
 });
 app.controller('RegisterCtrl', function ($scope, $http, $templateCache, $routeParams) {
     $scope.new_user = {};
-    $http.post('/auth/customer/get', $scope.new_user).then(function (response) {
+    $http.post('/auth/customer/create', $scope.new_user).then(function (response) {
         $scope.user = response.data;
     });
 });

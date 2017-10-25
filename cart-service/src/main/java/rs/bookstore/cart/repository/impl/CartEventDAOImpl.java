@@ -11,7 +11,7 @@ import io.vertx.ext.sql.ResultSet;
 import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.ext.jdbc.JDBCClient;
 import java.util.Optional;
-import rs.bookstore.cart.event.CartEvent;
+import rs.bookstore.cart.domain.CartEvent;
 import rx.Observable;
 import rx.Single;
 import rs.bookstore.cart.repository.CartEventDAO;
@@ -68,7 +68,7 @@ public class CartEventDAOImpl implements CartEventDAO {
                 .add(entity.getTime() > 0 ? entity.getTime() : System.currentTimeMillis());
         return client.rxGetConnection()
                 .flatMap(conn -> conn.rxUpdateWithParams(SAVE_STATEMENT, params)
-                        .map(r -> (Void) null)
+                .map(r -> (Void) null)
                         .doAfterTerminate(conn::close)
                 );
     }

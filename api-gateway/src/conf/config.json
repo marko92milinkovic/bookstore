@@ -1,6 +1,8 @@
 {
-    "db_name": "master",
-    "host": "localhost",
-    "port": 27017
+    "mongo": {
+        "db_name": "master",
+        "host": "localhost",
+        "port": 27017
+    }
 }
 

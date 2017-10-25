@@ -1,5 +1,7 @@
 {
   "db_name": "master",
-  "host": "mongo",
-  "port": 27017
+  "host": "localhost",
+  "mongo.port": 27017,
+  "service.host": "customer-microservice",
+  "service.port":9001
 }

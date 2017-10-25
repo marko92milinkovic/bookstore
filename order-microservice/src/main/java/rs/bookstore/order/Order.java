@@ -7,6 +7,8 @@ package rs.bookstore.order;
 
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
+//import rs.bookstore.domain.BookItem;
+
 import java.util.List;
 
 /**
@@ -19,15 +21,15 @@ public class Order {
     private long orderId;
     private long customerId;
     private long paymentId;
-    private List<BookItem> bookItems;
+//    private List<OrderItem> bookItems;
     private double totalPrice;
     private long createTime;
 
-    public Order(long orderId, long customerId, long paymentId, List<BookItem> bookItems, double totalPrice, long createTime) {
+    public Order(long orderId, long customerId, long paymentId,/* List<BookItem> bookItems,*/ double totalPrice, long createTime) {
         this.orderId = orderId;
         this.customerId = customerId;
         this.paymentId = paymentId;
-        this.bookItems = bookItems;
+//        this.bookItems = bookItems;
         this.totalPrice = totalPrice;
         this.createTime = createTime;
     }
@@ -73,14 +75,14 @@ public class Order {
 
     }
 
-    public List<BookItem> getBookItems() {
-        return bookItems;
-    }
-
-    public Order setBookItems(List<BookItem> bookItems) {
-        this.bookItems = bookItems;
-        return this;
-    }
+//    public List<BookItem> getBookItems() {
+//        return bookItems;
+//    }
+//
+//    public Order setBookItems(List<BookItem> bookItems) {
+//        this.bookItems = bookItems;
+//        return this;
+//    }
 
     public double getTotalPrice() {
         return totalPrice;

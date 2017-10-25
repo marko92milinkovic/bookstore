@@ -13,7 +13,6 @@ import io.vertx.core.Vertx;
 import io.vertx.serviceproxy.ProxyHelper;
 
 /**
- *
  * @author marko
  */
 @VertxGen
@@ -46,6 +45,13 @@ public interface CustomerService {
         ProxyHelper.registerService(CustomerService.class, vertx, service, SERVICE_ADDRESS);
     }
 
-    void getCustomerByUsername(String username, Handler<AsyncResult<Customer>> resultHandler);
-    
+    void getCustomerByUsername(String username, Handler <AsyncResult <Customer>> resultHandler);
+
+    void createNewCustomer(Customer customer, Handler <AsyncResult <Customer>> resultHandler);
+
+
+
+
+
+    void hi(String text, Handler <AsyncResult <String>> resultHandler);
 }

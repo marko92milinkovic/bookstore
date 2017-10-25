@@ -12,6 +12,10 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
+import io.vertx.ext.web.handler.CorsHandler;
+import io.vertx.ext.web.handler.sockjs.BridgeOptions;
+import io.vertx.ext.web.handler.sockjs.PermittedOptions;
+import io.vertx.ext.web.handler.sockjs.SockJSHandler;
 import io.vertx.rx.java.RxHelper;
 import io.vertx.serviceproxy.ProxyHelper;
 import org.jacpfx.vertx.spring.SpringVerticle;
@@ -56,6 +60,27 @@ public class BookRestAPIVerticle extends MicroServiceVerticle {
         router.get(API_GET_ONE).handler(this::getOne);
         router.get(API_GET_ALL).handler(this::retrieveAll);
         ProxyHelper.registerService(BookService.class, vertx, bookService, SERVICE_ADDRESS);
+        router.route().handler(CorsHandler.create("*")
+                .allowedMethod(io.vertx.core.http.HttpMethod.GET)
+                .allowedMethod(io.vertx.core.http.HttpMethod.POST)
+                .allowedMethod(io.vertx.core.http.HttpMethod.OPTIONS)
+                .allowedHeader("Access-Control-Request-Method")
+                .allowedHeader("Access-Control-Allow-Credentials")
+                .allowedHeader("Access-Control-Allow-Origin")
+                .allowedHeader("Access-Control-Allow-Headers")
+                .allowedHeader("Content-Type"));
+        router.route().handler(BodyHandler.create());
+        BridgeOptions opts = new BridgeOptions()
+                .addInboundPermitted(new PermittedOptions()
+                        .setAddress(SERVICE_ADDRESS))
+                .addOutboundPermitted(new PermittedOptions()
+                        .setAddress(SERVICE_ADDRESS))
+                ;
+
+// Create the event bus bridge and add it to the router.
+        SockJSHandler ebHandler = SockJSHandler.create(vertx).bridge(opts);
+
+        router.route("/eventbus/*").handler(ebHandler);
 
         //API gateway can ensure if the endpoint is active
 //        enableHeartbeatCheck(router, config());

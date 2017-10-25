@@ -1,22 +1,25 @@
 import io.vertx.core.Handler
+import io.vertx.core.eventbus.EventBus
 import io.vertx.core.eventbus.Message
+import io.vertx.core.json.JsonObject
 import io.vertx.redis.RedisClient
+import io.vertx.redis.RedisOptions
 import io.vertx.rx.java.ObservableHandler
 import io.vertx.rx.java.RxHelper
 import rx.observers.Observers
 import rx.Observer
 
 
-def eb = vertx.eventBus()
-
 def PREFIX = "inventory:"
-def redis = RedisClient.create(vertx, vertx.getOrCreateContext().config())
+JsonObject config = vertx.getOrCreateContext().config()
+RedisClient redis = RedisClient.create(vertx, redisOptions)
 
 
 eb.consumer("inventory.storage.increase").handler({ message ->
     def body = message.body()
 
     def bookId = body.getLong("bookId")
+    redis.set
     def amount = body.getInteger("amount")
 
     redis.incrby(PREFIX + bookId, amount, { ar ->

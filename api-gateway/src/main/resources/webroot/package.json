@@ -3,9 +3,6 @@
   "version": "1.0.0",
   "description": "",
   "main": "app.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "dependencies": {
     "angular": "^1.6.4",
     "angular-resource": "^1.6.4",
@@ -15,6 +12,5 @@
     "sockjs": "^0.3.18",
     "vertx3-eventbus-client": "3.4.1"
   },
-  "author": "",
-  "license": "ISC"
+  "author": "marko"
 }

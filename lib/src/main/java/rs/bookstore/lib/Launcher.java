@@ -25,6 +25,8 @@ public class Launcher extends io.vertx.core.Launcher {
                 .setClusterHost("127.0.0.1");
     }
 
+
+
     @Override
     public void beforeDeployingVerticle(DeploymentOptions deploymentOptions) {
         super.beforeDeployingVerticle(deploymentOptions);
@@ -34,10 +36,10 @@ public class Launcher extends io.vertx.core.Launcher {
         }
 
         File conf = new File("src/conf/config.json");
-        deploymentOptions.getConfig().mergeIn(getConfiguration(conf));
+        deploymentOptions.getConfig().mergeIn(getConfigurationFromFile(conf));
     }
 
-    private JsonObject getConfiguration(File config) {
+    private JsonObject getConfigurationFromFile(File config) {
         JsonObject conf = new JsonObject();
         if (config.isFile()) {
             System.out.println("Reading config file: " + config.getAbsolutePath());

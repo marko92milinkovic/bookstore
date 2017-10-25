@@ -30,7 +30,7 @@ public abstract class MicroServiceVerticle extends AbstractVerticle {
     //initialization for the discovery and circuitBreaker
     @Override
     public void start() {
-        discovery = ServiceDiscovery.create(vertx, new ServiceDiscoveryOptions().setBackendConfiguration(config()));
+        ServiceDiscovery discovery = ServiceDiscovery.create(vertx, new ServiceDiscoveryOptions().setBackendConfiguration(config()));
     }
 
     //Several helper methods to publish various kind of services
@@ -38,6 +38,22 @@ public abstract class MicroServiceVerticle extends AbstractVerticle {
         Record record = HttpEndpoint.createRecord(name, host, port, "/");
         publish(record, completionHandler);
     }
+
+//    //Several helper methods to publish various kind of services
+//    public void publishHttpEndpoint(String serviceName, String host, int port, Handler<AsyncResult<Void>> completionHandler) {
+//        ServiceDiscovery discovery = ServiceDiscovery.create(vertx, new ServiceDiscoveryOptions().setBackendConfiguration(config()));
+//
+//        Record record = HttpEndpoint.createRecord(serviceName, host, port, "/");
+//        discovery.publish(record, ar -> {
+//            if (ar.succeeded()) {
+//                registeredRecords.add(record);
+////                logger.info("Service "+ar.result().getName()+" published successfuly");
+//                completionHandler.handle(Future.succeededFuture());
+//            } else {
+//                completionHandler.handle(Future.failedFuture(ar.cause()));
+//            }
+//        });
+//    }
 
     public void publishMessageSource(String name, String address, Class contentClass, Handler<AsyncResult<Void>> completionHandler) {
         Record record = MessageSource.createRecord(name, address, contentClass);

@@ -41,7 +41,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     public BookService getAllBooks(Handler<AsyncResult<List<Book>>> resultHandler) {
-
+        System.out.println("Daj bre knjige");
         Future<List<Book>> retrieveAll = bookDAO.retrieveAll();
         retrieveAll.setHandler(resultHandler);
         return this;

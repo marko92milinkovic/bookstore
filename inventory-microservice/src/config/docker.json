@@ -1,4 +1,5 @@
 {
   "redis.host": "redis",
-  "http.port" : "inventory-microservice"
+  "service.host" : "inventory-microservice",
+  "service.port": 9002
 }

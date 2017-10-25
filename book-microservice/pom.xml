@@ -17,7 +17,15 @@
             <artifactId>lib</artifactId>
             <version>${project.version}</version>
         </dependency>
-        
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-sockjs-service-proxy</artifactId>
+
+        </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-service-proxy</artifactId>
+        </dependency>
         
         <dependency>
             <groupId>io.vertx</groupId>

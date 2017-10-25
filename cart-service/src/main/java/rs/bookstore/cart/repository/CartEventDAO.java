@@ -5,7 +5,7 @@
  */
 package rs.bookstore.cart.repository;
 
-import rs.bookstore.cart.event.CartEvent;
+import rs.bookstore.cart.domain.CartEvent;
 import rs.bookstore.lib.repository.RxRepository;
 import rx.Observable;
 

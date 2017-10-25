@@ -15,7 +15,7 @@ import io.vertx.core.json.JsonObject;
 @DataObject(generateConverter = true)
 public class Customer {
 
-    private String id;
+    private Long id;
     private String username;
     private String phone;
     private String email;
@@ -33,14 +33,23 @@ public class Customer {
     public JsonObject toJson() {
         JsonObject json = new JsonObject();
         CustomerConverter.toJson(this, json);
+        System.out.println("Trazi mi json: "+json);
         return json;
     }
 
-    public String getId() {
+    public Customer(Long id, String username, String phone, String email, Long birthDate) {
+        this.id = id;
+        this.username = username;
+        this.phone = phone;
+        this.email = email;
+        this.birthDate = birthDate;
+    }
+
+    public Long getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
